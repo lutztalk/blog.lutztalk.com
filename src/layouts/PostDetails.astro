@@ -5,6 +5,7 @@ import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Tag from "@/components/Tag.astro";
 import Datetime from "@/components/Datetime.astro";
+import ReadingTime from "@/components/ReadingTime.astro";
 import EditPost from "@/components/EditPost.astro";
 import ShareLinks from "@/components/ShareLinks.astro";
 import BackButton from "@/components/BackButton.astro";
@@ -96,14 +97,16 @@ const nextPost =
     >
       {title}
     </h1>
-    <div class="my-2 flex items-center gap-2">
+    <div class="my-2 flex items-center gap-2 flex-wrap">
       <Datetime {pubDatetime} {modDatetime} {timezone} size="lg" />
+      <span aria-hidden="true" class="opacity-60">•</span>
+      <ReadingTime {post} size="lg" />
       <span
         aria-hidden="true"
         class:list={[
-          "max-sm:hidden",
+          "max-sm:hidden opacity-60",
           { hidden: !SITE.editPost.enabled || hideEditPost },
-        ]}>|</span
+        ]}>•</span
       >
       <EditPost {hideEditPost} {post} class="max-sm:hidden" />
     </div>

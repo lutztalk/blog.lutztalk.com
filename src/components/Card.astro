@@ -3,12 +3,13 @@ import type { CollectionEntry } from "astro:content";
 import { slugifyStr } from "@/utils/slugify";
 import { getPath } from "@/utils/getPath";
 import Datetime from "./Datetime.astro";
+import ReadingTime from "./ReadingTime.astro";
 
 type Props = {
   variant?: "h2" | "h3";
 } & CollectionEntry<"blog">;
 
-const { variant: Heading = "h2", id, data, filePath } = Astro.props;
+const { variant: Heading = "h2", id, data, filePath, ...postProps } = Astro.props;
 
 const { title, description, ...props } = data;
 ---
@@ -26,6 +27,10 @@ const { title, description, ...props } = data;
       {title}
     </Heading>
   </a>
-  <Datetime {...props} />
+  <div class="flex items-center gap-2 my-1">
+    <Datetime {...props} />
+    <span aria-hidden="true" class="opacity-60">•</span>
+    <ReadingTime post={Astro.props as CollectionEntry<"blog">} />
+  </div>
   <p>{description}</p>
 </li>

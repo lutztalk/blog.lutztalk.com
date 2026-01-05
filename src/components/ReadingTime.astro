@@ -1,0 +1,35 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { getReadingTime } from "@/utils/getReadingTime";
+
+type Props = {
+  post: CollectionEntry<"blog">;
+  class?: string;
+  size?: "sm" | "lg";
+};
+
+const { post, class: className = "", size = "sm" } = Astro.props;
+
+// Read the raw markdown file content
+let content = "";
+try {
+  // Construct the file path relative to the project root
+  const filePath = join(process.cwd(), post.filePath);
+  const fileContent = await readFile(filePath, "utf-8");
+  // Remove frontmatter (content between --- markers)
+  content = fileContent.replace(/^---[\s\S]*?---\n/, "");
+} catch (error) {
+  // Fallback: try to use body if available
+  content = (post as any).body || "";
+}
+
+const readingTime = getReadingTime(content);
+const readingTimeText = readingTime === 1 ? "1 min read" : `${readingTime} min read`;
+---
+
+<span class:list={["opacity-80 text-sm", { "sm:text-base": size === "lg" }, className]}>
+  {readingTimeText}
+</span>
+
