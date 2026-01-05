@@ -2,7 +2,7 @@
 // Admin page for Decap CMS
 ---
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -21,14 +21,80 @@
   </style>
 </head>
 <body>
+  <div id="nc-root"></div>
   <!-- Include the script that builds the page and powers Decap CMS -->
   <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   <script>
-    if (typeof CMS !== 'undefined') {
-      CMS.init();
-    } else {
-      console.error('Decap CMS failed to load');
-    }
+    // Wait for CMS to load
+    window.addEventListener('DOMContentLoaded', function() {
+      if (typeof CMS !== 'undefined') {
+        // Initialize CMS with inline config
+        window.CMS.init({
+          config: {
+            backend: {
+              name: 'github',
+              repo: 'lutztalk/blog.lutztalk.com',
+              branch: 'main',
+              base_url: window.location.origin,
+              auth_type: 'pkce',
+              auth_scope: 'repo'
+            },
+            media_folder: 'public/assets',
+            public_folder: '/assets',
+            collections: [
+              {
+                name: 'blog',
+                label: 'Blog Posts',
+                folder: 'src/data/blog',
+                create: true,
+                slug: '{{slug}}',
+                extension: 'md',
+                format: 'frontmatter',
+                frontmatter_delimiter: ['---', '---'],
+                identifier_field: 'title',
+                fields: [
+                  { label: 'Title', name: 'title', widget: 'string', required: true },
+                  { label: 'Author', name: 'author', widget: 'string', default: 'Austin Lutz', required: true },
+                  { 
+                    label: 'Publish Date', 
+                    name: 'pubDatetime', 
+                    widget: 'datetime', 
+                    format: 'YYYY-MM-DDTHH:mm:ss.SSSZ',
+                    date_format: 'YYYY-MM-DD',
+                    time_format: 'HH:mm:ss',
+                    required: true 
+                  },
+                  { 
+                    label: 'Modified Date', 
+                    name: 'modDatetime', 
+                    widget: 'datetime', 
+                    format: 'YYYY-MM-DDTHH:mm:ss.SSSZ',
+                    date_format: 'YYYY-MM-DD',
+                    time_format: 'HH:mm:ss',
+                    required: false,
+                    default: null
+                  },
+                  { label: 'Description', name: 'description', widget: 'text', required: true },
+                  { 
+                    label: 'Tags', 
+                    name: 'tags', 
+                    widget: 'list', 
+                    default: ['others'],
+                    field: { label: 'Tag', name: 'tag', widget: 'string' },
+                    required: false 
+                  },
+                  { label: 'Featured', name: 'featured', widget: 'boolean', default: false, required: false },
+                  { label: 'Draft', name: 'draft', widget: 'boolean', default: false, required: false },
+                  { label: 'Body', name: 'body', widget: 'markdown', required: true }
+                ]
+              }
+            ]
+          }
+        });
+      } else {
+        console.error('Decap CMS failed to load');
+      }
+    });
   </script>
 </body>
 </html>
