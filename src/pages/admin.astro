@@ -54,10 +54,9 @@
                   name: 'github',
                   repo: 'lutztalk/blog.lutztalk.com',
                   branch: 'main',
-                  base_url: 'https://blog.lutztalk.com',
+                  base_url: window.location.origin,
                   auth_type: 'pkce',
-                  auth_scope: 'repo',
-                  site_domain: window.location.hostname
+                  auth_scope: 'repo'
                 },
                 media_folder: 'public/assets',
                 public_folder: '/assets',
