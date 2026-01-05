@@ -3,7 +3,7 @@ export const SITE = {
   author: "Austin Lutz",
   profile: "https://blog.lutztalk.com/",
   desc: "A minimal, responsive and SEO-friendly Astro blog.",
-  title: "LutzTalk Blog",
+  title: "LutzTalk",
   ogImage: "astropaper-og.jpg",
   lightAndDarkMode: true,
   postPerIndex: 4,
