@@ -3,18 +3,27 @@
 @layer base {
   /* ===== Override default Tailwind Typography styles ===== */
   .app-prose {
-    @apply prose;
+    @apply prose prose-lg;
 
     h1,
     h2,
     h3,
     h4,
     th {
-      @apply mb-3 text-foreground;
+      @apply mb-4 text-foreground font-semibold;
+      letter-spacing: -0.02em;
+    }
+
+    h1 {
+      @apply text-3xl sm:text-4xl;
+    }
+
+    h2 {
+      @apply text-2xl sm:text-3xl;
     }
 
     h3 {
-      @apply italic;
+      @apply text-xl sm:text-2xl;
     }
 
     p,
@@ -27,8 +36,12 @@
       @apply text-foreground;
     }
 
+    p {
+      @apply leading-7;
+    }
+
     a {
-      @apply wrap-break-word text-foreground decoration-dashed underline-offset-4 hover:text-accent focus-visible:no-underline;
+      @apply wrap-break-word text-foreground decoration-dashed underline-offset-4 hover:text-accent focus-visible:no-underline transition-colors;
     }
 
     ul {
