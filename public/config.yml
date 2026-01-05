@@ -3,6 +3,7 @@ backend:
   repo: lutztalk/blog.lutztalk.com
   branch: main
   base_url: https://blog.lutztalk.com
+  site_domain: localhost:4321
   auth_type: pkce
   auth_scope: repo
 
@@ -16,7 +17,7 @@ collections:
     create: true
     slug: "{{slug}}"
     extension: "md"
-    format: "frontmatter"
+    format: "yaml-frontmatter"
     frontmatter_delimiter: ["---", "---"]
     identifier_field: "title"
     fields:
