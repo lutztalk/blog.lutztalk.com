@@ -27,16 +27,21 @@
 <body>
   <div id="nc-root"></div>
   <!-- Include the script that builds the page and powers Decap CMS -->
-  <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+  <!-- Using version 3.8.0 for better React compatibility -->
+  <script src="https://unpkg.com/decap-cms@3.8.0/dist/decap-cms.js"></script>
   <script>
-    // Suppress React errors
-    window.addEventListener('error', function(e) {
-      if (e.message && e.message.includes('removeChild')) {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
+    // Suppress React errors - catch and ignore
+    const originalRemoveChild = Node.prototype.removeChild;
+    Node.prototype.removeChild = function(child) {
+      try {
+        return originalRemoveChild.call(this, child);
+      } catch (e) {
+        if (e.message && e.message.includes('not a child')) {
+          return child; // Return the child to prevent error
+        }
+        throw e;
       }
-    }, true);
+    };
 
     // Initialize CMS after script loads
     (function() {
