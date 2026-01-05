@@ -17,9 +17,9 @@ collections:
     create: true
     slug: "{{slug}}"
     extension: "md"
-    format: "yaml"
     frontmatter_delimiter: ["---", "---"]
     identifier_field: "title"
+    type: "file_based_collection"
     fields:
       - { label: "Title", name: "title", widget: "string", required: true }
       - { label: "Author", name: "author", widget: "string", default: "Austin Lutz", required: true }
