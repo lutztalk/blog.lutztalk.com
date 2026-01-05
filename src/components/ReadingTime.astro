@@ -16,10 +16,15 @@ const { post, class: className = "", size = "sm" } = Astro.props;
 let content = "";
 try {
   // Construct the file path relative to the project root
-  const filePath = join(process.cwd(), post.filePath);
-  const fileContent = await readFile(filePath, "utf-8");
-  // Remove frontmatter (content between --- markers)
-  content = fileContent.replace(/^---[\s\S]*?---\n/, "");
+  if (post.filePath) {
+    const filePath = join(process.cwd(), post.filePath);
+    const fileContent = await readFile(filePath, "utf-8");
+    // Remove frontmatter (content between --- markers)
+    content = fileContent.replace(/^---[\s\S]*?---\n/, "");
+  } else {
+    // Fallback: try to use body if available
+    content = (post as any).body || "";
+  }
 } catch (error) {
   // Fallback: try to use body if available
   content = (post as any).body || "";
