@@ -17,6 +17,7 @@ collections:
     create: true
     slug: "{{slug}}"
     extension: "md"
+    format: "frontmatter"
     frontmatter_delimiter: ["---", "---"]
     identifier_field: "title"
     fields:
