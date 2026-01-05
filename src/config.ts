@@ -2,7 +2,7 @@ export const SITE = {
   website: "https://blog.lutztalk.com/", // replace this with your deployed domain
   author: "Austin Lutz",
   profile: "https://blog.lutztalk.com/",
-  desc: "Hey there! I'm Austin Lutz, and welcome to LutzTalk—where I explore AI, 5G networks, collaboration technology, networking, and broadcasting. Think of it as your friendly neighborhood tech talk show with way more enthusiasm. Grab a coffee and let's talk tech!",
+  desc: "I'm Austin Lutz, and this is LutzTalk. I write about AI, 5G, collaboration tools, networking, and broadcasting stuff that catches my eye. Sometimes it's deep dives, sometimes it's quick thoughts. Always honest, usually caffeinated.",
   title: "LutzTalk",
   ogImage: "astropaper-og.jpg",
   lightAndDarkMode: true,
