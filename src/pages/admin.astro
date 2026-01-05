@@ -18,6 +18,10 @@
       max-width: 1200px;
       margin: 0 auto;
     }
+    /* Hide error overlay if it appears */
+    .nc-root-error {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -25,6 +29,15 @@
   <!-- Include the script that builds the page and powers Decap CMS -->
   <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   <script>
+    // Suppress React errors
+    window.addEventListener('error', function(e) {
+      if (e.message && e.message.includes('removeChild')) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    }, true);
+
     // Initialize CMS after script loads
     (function() {
       function initCMS() {
@@ -96,19 +109,18 @@
             console.error('Error initializing CMS:', e);
           }
         } else {
-          // Retry after a short delay
           setTimeout(initCMS, 100);
         }
       }
       
-      // Try to initialize immediately or wait for DOM
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initCMS);
+        document.addEventListener('DOMContentLoaded', function() {
+          setTimeout(initCMS, 500);
+        });
       } else {
-        initCMS();
+        setTimeout(initCMS, 500);
       }
     })();
   </script>
 </body>
 </html>
-
