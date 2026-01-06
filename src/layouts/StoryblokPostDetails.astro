@@ -70,6 +70,9 @@ const nextPost =
     >
       {title}
     </h1>
+    {description && (
+      <p class="mt-2 text-lg text-foreground/80">{description}</p>
+    )}
     <div class="my-2 flex items-center gap-2 flex-wrap">
       <Datetime pubDatetime={pubDatetime} modDatetime={modDatetime} size="lg" />
     </div>
