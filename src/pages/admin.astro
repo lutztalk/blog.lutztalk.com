@@ -60,7 +60,6 @@
     <p>This is a restricted area. Only authorized personnel with proper GitHub access to this repository may use this interface. Unauthorized access is prohibited.</p>
   </div>
   <div id="nc-root"></div>
-  <script src="https://unpkg.com/decap-cms@3.8.0/dist/decap-cms.js"></script>
   <script>
     // Suppress React errors - catch and ignore removeChild errors
     const originalRemoveChild = Node.prototype.removeChild;
@@ -79,31 +78,39 @@
     const siteId = window.location.hostname === 'localhost' 
       ? 'localhost:4321' 
       : window.location.hostname;
-    
-    // Override CMS config to use correct site_id
-    if (typeof window !== 'undefined' && window.CMS) {
-      const originalInit = window.CMS.init;
-      window.CMS.init = function(config) {
-        if (config && config.backend) {
-          config.backend.site_id = siteId;
-        }
-        return originalInit.call(this, config);
-      };
-    }
 
-    // Initialize CMS after script loads
+    // Override fetch/XMLHttpRequest to modify auth URLs before CMS loads
+    const originalFetch = window.fetch;
+    window.fetch = function(...args) {
+      if (args[0] && typeof args[0] === 'string' && args[0].includes('site_id=demo.decapcms.org')) {
+        args[0] = args[0].replace('site_id=demo.decapcms.org', 'site_id=' + siteId);
+      }
+      return originalFetch.apply(this, args);
+    };
+
+    // Override window.open to fix auth URLs
+    const originalOpen = window.open;
+    window.open = function(url, ...rest) {
+      if (url && typeof url === 'string' && url.includes('site_id=demo.decapcms.org')) {
+        url = url.replace('site_id=demo.decapcms.org', 'site_id=' + siteId);
+      }
+      return originalOpen.call(this, url, ...rest);
+    };
+  </script>
+  <script src="https://unpkg.com/decap-cms@3.8.0/dist/decap-cms.js"></script>
+  <script>
+    // Initialize CMS only once after script loads
+    let cmsInitialized = false;
     (function() {
       function initCMS() {
+        if (cmsInitialized) return;
         if (typeof CMS !== 'undefined' && window.CMS) {
           try {
-            // Get the config and modify it before init
-            const config = window.CMS.getConfig ? window.CMS.getConfig() : null;
-            if (config && config.backend) {
-              config.backend.site_id = siteId;
-            }
+            cmsInitialized = true;
             window.CMS.init();
           } catch (e) {
             console.error('Error initializing CMS:', e);
+            cmsInitialized = false;
           }
         } else {
           setTimeout(initCMS, 100);
