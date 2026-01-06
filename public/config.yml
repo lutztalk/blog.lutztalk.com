@@ -3,6 +3,7 @@ backend:
   repo: lutztalk/blog.lutztalk.com
   branch: main
   base_url: https://blog.lutztalk.com
+  auth_endpoint: auth
   auth_type: pkce
   auth_scope: repo
   site_id: blog.lutztalk.com
