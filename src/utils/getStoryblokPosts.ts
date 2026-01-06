@@ -23,21 +23,43 @@ export async function getStoryblokPosts(): Promise<StoryblokPost[]> {
   const storyblokApi = useStoryblokApi();
   
   try {
-    const { data } = await storyblokApi.get("cdn/stories", {
+    // First, try to get stories from blog/ folder
+    let { data } = await storyblokApi.get("cdn/stories", {
       starts_with: "blog/",
       version: import.meta.env.DEV ? "draft" : "published",
-      per_page: 100, // Adjust as needed
+      per_page: 100,
     });
 
-    const stories = data.stories || [];
+    let stories = data.stories || [];
+    
+    // If no stories found in blog/, try getting all stories and filter by component type
+    if (stories.length === 0) {
+      console.log("[Storyblok] No stories found in blog/ folder, trying all stories...");
+      const allData = await storyblokApi.get("cdn/stories", {
+        version: import.meta.env.DEV ? "draft" : "published",
+        per_page: 100,
+      });
+      
+      // Filter by component type (blogPost) or check if slug contains blog
+      stories = (allData.data.stories || []).filter((story: any) => {
+        const component = story.content?.component || story.content?._uid;
+        return component === "blogPost" || story.slug?.includes("blog") || story.full_slug?.includes("blog");
+      });
+    }
     
     // Log for debugging
-    if (import.meta.env.DEV) {
-      console.log(`[Storyblok] Found ${stories.length} stories`);
+    console.log(`[Storyblok] Found ${stories.length} stories`);
+    if (stories.length > 0) {
       stories.forEach((story: any) => {
-        console.log(`  - ${story.name} (slug: ${story.slug}, full_slug: ${story.full_slug})`);
-        console.log(`    Published: ${story.published_at || 'No'}, Draft field: ${story.content.draft || false}`);
+        console.log(`  - ${story.name} (slug: ${story.slug}, full_slug: ${story.full_slug}, component: ${story.content?.component || 'unknown'})`);
+        console.log(`    Published: ${story.published_at || 'No'}, Draft field: ${story.content?.draft || false}`);
+        console.log(`    Content keys:`, Object.keys(story.content || {}));
       });
+    } else {
+      console.log("[Storyblok] No stories found. Make sure:");
+      console.log("  1. Your post is published in Storyblok");
+      console.log("  2. Your post uses the 'blogPost' component");
+      console.log("  3. Your post is in a 'blog' folder (or has 'blog' in the slug)");
     }
     
     return stories.map((story: any) => {
@@ -69,10 +91,20 @@ export async function getStoryblokPosts(): Promise<StoryblokPost[]> {
         },
       };
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching Storyblok posts:", error);
-    if (error instanceof Error) {
-      console.error("Error details:", error.message);
+    if (error?.response?.data) {
+      console.error("Storyblok API Error:", error.response.data);
+    }
+    if (error?.message) {
+      console.error("Error message:", error.message);
+    }
+    if (error?.status === 401) {
+      console.error("❌ Unauthorized - Check your STORYBLOK_TOKEN:");
+      console.error("   1. Go to Storyblok → Settings → Access Tokens");
+      console.error("   2. Copy your PUBLIC token (not Preview token)");
+      console.error("   3. Make sure it's set in Vercel environment variables");
+      console.error("   4. Token should look like: {space_id}-{token} or just {token}");
     }
     return [];
   }
