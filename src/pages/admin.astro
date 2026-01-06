@@ -42,12 +42,20 @@
       max-width: 1200px;
       margin: 0 auto;
     }
-    /* Hide Decap CMS logo */
+    /* Hide Decap CMS logo and branding */
     [class*="nc-root"] [class*="logo"],
     [class*="nc-root"] a[href*="decapcms"],
+    [class*="nc-root"] a[href*="netlify"],
     [class*="nc-root"] img[alt*="Decap"],
-    [class*="nc-root"] img[alt*="Netlify"] {
+    [class*="nc-root"] img[alt*="Netlify"],
+    [class*="nc-root"] svg[class*="logo"],
+    a[href*="decapcms.org"],
+    a[href*="netlify.com"] {
       display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      height: 0 !important;
+      width: 0 !important;
     }
   </style>
 </head>
@@ -61,70 +69,67 @@
   </div>
   <div id="nc-root"></div>
   <script>
-    // Suppress React errors - catch and ignore removeChild errors
-    const originalRemoveChild = Node.prototype.removeChild;
-    Node.prototype.removeChild = function(child) {
-      try {
-        return originalRemoveChild.call(this, child);
-      } catch (e) {
-        if (e instanceof Error && e.message && e.message.includes('not a child')) {
-          return child; // Return the child to prevent error
-        }
-        throw e;
-      }
-    };
+    // Prevent duplicate initialization
+    if (window.CMS_INITIALIZED) {
+      console.warn('CMS already initialized, skipping...');
+    } else {
+      window.CMS_INITIALIZED = true;
 
-    // Set site_id for authentication - must match the domain
-    const siteId = window.location.hostname === 'localhost' 
-      ? 'localhost:4321' 
-      : window.location.hostname;
-
-    // Override fetch/XMLHttpRequest to modify auth URLs before CMS loads
-    const originalFetch = window.fetch;
-    window.fetch = function(...args) {
-      if (args[0] && typeof args[0] === 'string' && args[0].includes('site_id=demo.decapcms.org')) {
-        args[0] = args[0].replace('site_id=demo.decapcms.org', 'site_id=' + siteId);
-      }
-      return originalFetch.apply(this, args);
-    };
-
-    // Override window.open to fix auth URLs
-    const originalOpen = window.open;
-    window.open = function(url, ...rest) {
-      if (url && typeof url === 'string' && url.includes('site_id=demo.decapcms.org')) {
-        url = url.replace('site_id=demo.decapcms.org', 'site_id=' + siteId);
-      }
-      return originalOpen.call(this, url, ...rest);
-    };
-  </script>
-  <script src="https://unpkg.com/decap-cms@3.8.0/dist/decap-cms.js"></script>
-  <script>
-    // Initialize CMS only once after script loads
-    let cmsInitialized = false;
-    (function() {
-      function initCMS() {
-        if (cmsInitialized) return;
-        if (typeof CMS !== 'undefined' && window.CMS) {
-          try {
-            cmsInitialized = true;
-            window.CMS.init();
-          } catch (e) {
-            console.error('Error initializing CMS:', e);
-            cmsInitialized = false;
+      // Suppress React errors - catch and ignore removeChild errors
+      const originalRemoveChild = Node.prototype.removeChild;
+      Node.prototype.removeChild = function(child) {
+        try {
+          return originalRemoveChild.call(this, child);
+        } catch (e) {
+          if (e instanceof Error && e.message && e.message.includes('not a child')) {
+            return child; // Return the child to prevent error
           }
-        } else {
-          setTimeout(initCMS, 100);
+          throw e;
         }
-      }
-      
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-          setTimeout(initCMS, 500);
-        });
-      } else {
-        setTimeout(initCMS, 500);
-      }
-    })();
+      };
+
+      // Set site_id for authentication - must match the domain
+      const siteId = window.location.hostname === 'localhost' 
+        ? 'localhost:4321' 
+        : window.location.hostname;
+
+      // Override fetch/XMLHttpRequest to modify auth URLs before CMS loads
+      const originalFetch = window.fetch;
+      window.fetch = function(...args) {
+        if (args[0] && typeof args[0] === 'string' && args[0].includes('site_id=demo.decapcms.org')) {
+          args[0] = args[0].replace('site_id=demo.decapcms.org', 'site_id=' + siteId);
+        }
+        return originalFetch.apply(this, args);
+      };
+
+      // Override window.open to fix auth URLs
+      const originalOpen = window.open;
+      window.open = function(url, ...rest) {
+        if (url && typeof url === 'string' && url.includes('site_id=demo.decapcms.org')) {
+          url = url.replace('site_id=demo.decapcms.org', 'site_id=' + siteId);
+        }
+        return originalOpen.call(this, url, ...rest);
+      };
+
+      // Load and initialize CMS
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/decap-cms@3.8.0/dist/decap-cms.js';
+      script.onload = function() {
+        // Wait a bit for CMS to be fully loaded
+        setTimeout(function() {
+          if (typeof CMS !== 'undefined' && window.CMS && !window.CMS._initialized) {
+            try {
+              window.CMS._initialized = true;
+              window.CMS.init();
+            } catch (e) {
+              console.error('Error initializing CMS:', e);
+              window.CMS._initialized = false;
+            }
+          }
+        }, 500);
+      };
+      document.head.appendChild(script);
+    }
   </script>
 </body>
 </html>
