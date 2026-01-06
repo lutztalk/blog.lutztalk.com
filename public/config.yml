@@ -5,6 +5,7 @@ backend:
   base_url: https://blog.lutztalk.com
   auth_type: pkce
   auth_scope: repo
+  site_id: blog.lutztalk.com
 
 media_folder: "public/assets"
 public_folder: "/assets"
