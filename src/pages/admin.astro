@@ -77,101 +77,112 @@
     <strong>⚠️ Authorized Personnel Only</strong>
     <p>This is a restricted area. Only authorized personnel with proper GitHub access to this repository may use this interface. Unauthorized access is prohibited.</p>
   </div>
-  <div id="nc-root"></div>
+  <div id="nc-root" style="display: none;"></div>
   <script>
     // Prevent duplicate initialization
     if (window.CMS_INITIALIZED) {
       console.warn('CMS already initialized, skipping...');
-    } else {
-      window.CMS_INITIALIZED = true;
+      return;
+    }
+    window.CMS_INITIALIZED = true;
 
-      // Suppress React errors - catch and ignore removeChild errors
-      const originalRemoveChild = Node.prototype.removeChild;
-      Node.prototype.removeChild = function(child) {
-        try {
-          return originalRemoveChild.call(this, child);
-        } catch (e) {
-          if (e instanceof Error && e.message && e.message.includes('not a child')) {
-            return child; // Return the child to prevent error
-          }
-          throw e;
+    // Suppress React errors - catch and ignore removeChild errors
+    const originalRemoveChild = Node.prototype.removeChild;
+    Node.prototype.removeChild = function(child) {
+      try {
+        return originalRemoveChild.call(this, child);
+      } catch (e) {
+        if (e instanceof Error && e.message && e.message.includes('not a child')) {
+          return child;
         }
-      };
+        throw e;
+      }
+    };
 
-      // Set site_id for authentication - must match the domain
-      const siteId = window.location.hostname === 'localhost' 
-        ? 'localhost:4321' 
-        : window.location.hostname;
+    // Set site_id for authentication
+    const siteId = window.location.hostname === 'localhost' 
+      ? 'localhost:4321' 
+      : window.location.hostname;
 
-      // Override fetch/XMLHttpRequest to modify auth URLs before CMS loads
-      const originalFetch = window.fetch;
-      window.fetch = function(...args) {
-        if (args[0] && typeof args[0] === 'string' && args[0].includes('site_id=demo.decapcms.org')) {
-          args[0] = args[0].replace('site_id=demo.decapcms.org', 'site_id=' + siteId);
-        }
-        return originalFetch.apply(this, args);
-      };
+    // Override fetch to modify auth URLs
+    const originalFetch = window.fetch;
+    window.fetch = function(...args) {
+      if (args[0] && typeof args[0] === 'string' && args[0].includes('site_id=demo.decapcms.org')) {
+        args[0] = args[0].replace('site_id=demo.decapcms.org', 'site_id=' + siteId);
+      }
+      return originalFetch.apply(this, args);
+    };
 
-      // Override window.open to fix auth URLs
-      const originalOpen = window.open;
-      window.open = function(url, ...rest) {
-        if (url && typeof url === 'string' && url.includes('site_id=demo.decapcms.org')) {
-          url = url.replace('site_id=demo.decapcms.org', 'site_id=' + siteId);
-        }
-        return originalOpen.call(this, url, ...rest);
-      };
+    // Override window.open to fix auth URLs
+    const originalOpen = window.open;
+    window.open = function(url, ...rest) {
+      if (url && typeof url === 'string' && url.includes('site_id=demo.decapcms.org')) {
+        url = url.replace('site_id=demo.decapcms.org', 'site_id=' + siteId);
+      }
+      return originalOpen.call(this, url, ...rest);
+    };
 
-      // Prevent CMS from auto-initializing by temporarily hiding the root
-      const root = document.getElementById('nc-root');
-      root.style.display = 'none';
+    // Prevent auto-init by overriding CMS.init before script loads
+    window.CMS = window.CMS || {};
+    const originalInit = window.CMS.init;
+    let initCalled = false;
+    window.CMS.init = function() {
+      if (initCalled) {
+        console.warn('CMS.init already called, skipping duplicate');
+        return;
+      }
+      initCalled = true;
+      if (originalInit) {
+        return originalInit.apply(this, arguments);
+      }
+    };
 
-      // Load and initialize CMS manually
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/decap-cms@3.8.0/dist/decap-cms.js';
-      script.onload = function() {
-        // Wait for CMS to load, then initialize manually
-        setTimeout(function() {
-          if (typeof CMS !== 'undefined' && window.CMS) {
+    // Load CMS script
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/decap-cms@3.8.0/dist/decap-cms.js';
+    script.onload = function() {
+      setTimeout(function() {
+        const root = document.getElementById('nc-root');
+        if (root && typeof CMS !== 'undefined' && window.CMS) {
+          // Show root
+          root.style.display = 'block';
+          
+          // Initialize only if not already initialized
+          if (!initCalled) {
+            initCalled = true;
             try {
-              // Show root and initialize
-              root.style.display = 'block';
-              
-              // Initialize only once
-              if (!window.CMS._initialized) {
-                window.CMS._initialized = true;
-                window.CMS.init();
-              }
-              
-              // Watch for and remove duplicates
-              const observer = new MutationObserver(function(mutations) {
-                const root = document.getElementById('nc-root');
-                if (root && root.children.length > 1) {
-                  // Keep only the first child, remove the rest
-                  while (root.children.length > 1) {
-                    root.removeChild(root.lastChild);
-                  }
-                }
-              });
-              
-              observer.observe(root, { childList: true });
-              
-              // Also check immediately
-              setTimeout(function() {
-                if (root && root.children.length > 1) {
-                  while (root.children.length > 1) {
-                    root.removeChild(root.lastChild);
-                  }
-                }
-              }, 500);
+              window.CMS.init();
             } catch (e) {
               console.error('Error initializing CMS:', e);
-              window.CMS._initialized = false;
             }
           }
-        }, 500);
-      };
-      document.head.appendChild(script);
-    }
+          
+          // Watch for and remove duplicates aggressively
+          const observer = new MutationObserver(function() {
+            if (root.children.length > 1) {
+              while (root.children.length > 1) {
+                root.removeChild(root.lastChild);
+              }
+            }
+          });
+          observer.observe(root, { childList: true, subtree: true });
+          
+          // Remove duplicates immediately and periodically
+          function removeDuplicates() {
+            if (root.children.length > 1) {
+              while (root.children.length > 1) {
+                root.removeChild(root.lastChild);
+              }
+            }
+          }
+          removeDuplicates();
+          setTimeout(removeDuplicates, 100);
+          setTimeout(removeDuplicates, 500);
+          setTimeout(removeDuplicates, 1000);
+        }
+      }, 300);
+    };
+    document.head.appendChild(script);
   </script>
 </body>
 </html>
