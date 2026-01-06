@@ -87,33 +87,30 @@
   </div>
   <div id="nc-root" style="display: none;"></div>
   <script>
-    // Function to hide Decap logo aggressively but preserve login button
+    // Function to hide Decap logo but preserve login button
     function hideDecapLogo() {
       const root = document.getElementById('nc-root');
       if (root) {
-        // Find and hide any element with Decap logo
+        // Find elements that contain "Decap" text but are NOT buttons
         const allElements = root.querySelectorAll('*');
         allElements.forEach(el => {
-          const text = (el.textContent || '').trim();
-          const className = (el.className || '').toString();
-          const id = (el.id || '').toString();
-          
-          // Skip if it's a button or contains login-related text
+          // Skip buttons and anything inside buttons
           if (el.tagName === 'BUTTON' || 
               el.closest('button') || 
               el.closest('[role="button"]') ||
-              text.includes('Login') ||
-              text.includes('GitHub') ||
-              className.includes('button') ||
-              className.includes('login')) {
-            return; // Skip this element
+              el.closest('[class*="button"]')) {
+            return; // Skip this element completely
           }
           
-          // Check if element is clearly the Decap logo (text is just "Decap" or has logo classes)
-          if ((text === 'Decap' && text.length === 5) || 
-              (className.includes('logo') && !className.includes('button')) || 
-              (className.includes('Decap') && !text.includes('Login')) || 
-              (id.includes('logo') && !id.includes('button'))) {
+          const text = (el.textContent || '').trim();
+          const className = (el.className || '').toString();
+          
+          // Only hide if it's clearly just the logo (exactly "Decap" or has logo class without button)
+          // AND doesn't contain "Login" or "GitHub"
+          if (text === 'Decap' && 
+              !text.includes('Login') && 
+              !text.includes('GitHub') &&
+              !className.includes('button')) {
             el.style.display = 'none';
             el.style.visibility = 'hidden';
             el.style.opacity = '0';
