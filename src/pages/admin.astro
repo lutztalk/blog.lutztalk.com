@@ -248,7 +248,10 @@
             
             // Check if we have a token in the URL hash (OAuth callback)
             const hash = window.location.hash;
-            const hasToken = hash.includes('token=');
+            const hashParams = new URLSearchParams(hash.split('?')[1] || '');
+            const token = hashParams.get('token');
+            const provider = hashParams.get('provider');
+            const hasToken = !!token;
             
             // Hide CMS login UI and show our header button (only if not processing OAuth token)
             const hideCMSLogin = function() {
@@ -283,8 +286,49 @@
               try {
                 (window as any).CMS.init();
                 
-                // If we have a token, let CMS process it first before hiding login UI
-                if (hasToken) {
+                // If we have a token, manually authenticate the CMS backend
+                if (hasToken && token && provider === 'github') {
+                  // Wait for CMS to be ready, then authenticate with the token
+                  setTimeout(function() {
+                    try {
+                      const cms = (window as any).CMS.get();
+                      if (cms && cms.backend) {
+                        // For GitHub backend, we need to store the token and mark as authenticated
+                        // Store token in localStorage (Decap CMS uses this)
+                        localStorage.setItem('netlify-cms-user', JSON.stringify({
+                          token: token,
+                          provider: 'github'
+                        }));
+                        
+                        // Try to authenticate the backend
+                        if (cms.backend.authenticate) {
+                          cms.backend.authenticate({ token: token });
+                        }
+                        
+                        // Mark backend as authenticated
+                        if (cms.backend.currentUser) {
+                          cms.backend.currentUser = () => Promise.resolve({ 
+                            login: 'authenticated', 
+                            name: 'User',
+                            token: token
+                          });
+                        }
+                        
+                        // Trigger backend to check status and load content
+                        if (cms.backend.status) {
+                          cms.backend.status();
+                        }
+                        
+                        // Clear the token from URL after a moment
+                        setTimeout(function() {
+                          window.history.replaceState({}, '', '/admin');
+                        }, 500);
+                      }
+                    } catch (e) {
+                      console.error('Error authenticating with token:', e);
+                    }
+                  }, 1500);
+                  
                   // Wait longer for CMS to process the token and authenticate
                   setTimeout(function() {
                     // Check if CMS is now authenticated (no auth page visible)
@@ -296,7 +340,7 @@
                         headerBtn.style.display = 'none';
                       }
                     }
-                  }, 2000);
+                  }, 3000);
                 } else {
                   // No token, hide login UI as usual
                   setTimeout(hideCMSLogin, 500);
