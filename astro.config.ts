@@ -1,6 +1,7 @@
 import { defineConfig, envField } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
 import sitemap from "@astrojs/sitemap";
+import { storyblok } from "@storyblok/astro";
 import remarkToc from "remark-toc";
 import remarkCollapse from "remark-collapse";
 import {
@@ -17,6 +18,12 @@ export default defineConfig({
   integrations: [
     sitemap({
       filter: page => SITE.showArchives || !page.endsWith("/archives"),
+    }),
+    storyblok({
+      accessToken: import.meta.env.STORYBLOK_TOKEN,
+      components: {
+        // We'll add components here as we create them
+      },
     }),
   ],
   markdown: {
@@ -54,6 +61,11 @@ export default defineConfig({
         access: "public",
         context: "client",
         optional: true,
+      }),
+      STORYBLOK_TOKEN: envField.string({
+        access: "secret",
+        context: "server",
+        optional: false,
       }),
     },
   },

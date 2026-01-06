@@ -16,6 +16,7 @@
     "@astrojs/rss": "^4.0.14",
     "@astrojs/sitemap": "^3.6.0",
     "@resvg/resvg-js": "^2.6.2",
+    "@storyblok/astro": "^7.3.7",
     "@tailwindcss/vite": "^4.1.18",
     "astro": "^5.16.6",
     "dayjs": "^1.11.19",
@@ -24,6 +25,7 @@
     "remark-toc": "^9.0.0",
     "satori": "^0.18.3",
     "sharp": "^0.34.5",
+    "storyblok": "^4.12.0",
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
