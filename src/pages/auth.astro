@@ -44,24 +44,40 @@
             
             // If we're on the auth page with provider=github, try to trigger OAuth
             var urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('provider') === 'github') {
-              // Wait for CMS to render, then find and click the login button
+            var code = urlParams.get('code'); // OAuth callback code
+            var provider = urlParams.get('provider');
+            
+            if (!code && provider === 'github') {
+              // Wait for CMS to fully render, then try multiple methods to trigger OAuth
               setTimeout(function() {
-                var loginBtn = root.querySelector('button');
-                if (loginBtn && loginBtn.textContent && loginBtn.textContent.includes('GitHub')) {
-                  // Try clicking the button to trigger OAuth
-                  loginBtn.click();
-                } else {
-                  // If button not found, try to trigger auth directly via CMS
-                  if (window.CMS && window.CMS.get && window.CMS.get().backend) {
-                    try {
-                      window.CMS.get().backend.authenticate({ provider: 'github', scope: 'repo' });
-                    } catch (e) {
-                      console.log('Could not trigger auth automatically:', e);
-                    }
+                // Method 1: Find and click the login button
+                var buttons = root.querySelectorAll('button, a[role="button"]');
+                for (var i = 0; i < buttons.length; i++) {
+                  var btn = buttons[i];
+                  var text = btn.textContent || btn.innerText || '';
+                  if (text.toLowerCase().includes('github') || text.toLowerCase().includes('login')) {
+                    btn.click();
+                    return;
                   }
                 }
-              }, 500);
+                
+                // Method 2: Try CMS API
+                if (window.CMS && window.CMS.get) {
+                  try {
+                    var cms = window.CMS.get();
+                    if (cms && cms.backend) {
+                      // Try to trigger authentication
+                      if (cms.backend.authenticate) {
+                        cms.backend.authenticate();
+                      } else if (cms.backend.login) {
+                        cms.backend.login();
+                      }
+                    }
+                  } catch (e) {
+                    console.log('Could not trigger auth via CMS API:', e);
+                  }
+                }
+              }, 1500);
             }
           } catch (e) {
             console.error('Error initializing CMS:', e);
