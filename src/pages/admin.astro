@@ -132,11 +132,13 @@
         elements.forEach(el => {
           // Skip if inside a button
           if (!el.closest('button') && !el.closest('[role="button"]')) {
-            el.style.display = 'none';
-            el.style.visibility = 'hidden';
-            el.style.opacity = '0';
-            el.style.height = '0';
-            el.style.width = '0';
+            if (el instanceof HTMLElement) {
+              el.style.display = 'none';
+              el.style.visibility = 'hidden';
+              el.style.opacity = '0';
+              el.style.height = '0';
+              el.style.width = '0';
+            }
           }
         });
       });
@@ -159,22 +161,24 @@
         // Hide if text is exactly "Decap" or has logo classes
         if ((text === 'Decap' && text.length === 5) || 
             (className.includes('DecapLogoIcon') || className.includes('exus10f3'))) {
-          el.style.display = 'none';
-          el.style.visibility = 'hidden';
-          el.style.opacity = '0';
+          if (el instanceof HTMLElement) {
+            el.style.display = 'none';
+            el.style.visibility = 'hidden';
+            el.style.opacity = '0';
+          }
         }
       });
     }
     
     // Prevent duplicate initialization
-    if (!window.CMS_INITIALIZED) {
-      window.CMS_INITIALIZED = true;
+    if (!(window as any).CMS_INITIALIZED) {
+      (window as any).CMS_INITIALIZED = true;
 
       // Suppress React errors - catch and ignore removeChild errors
       const originalRemoveChild = Node.prototype.removeChild;
-      Node.prototype.removeChild = function(child) {
+      Node.prototype.removeChild = function<T extends Node>(child: T): T {
         try {
-          return originalRemoveChild.call(this, child);
+          return originalRemoveChild.call(this, child) as T;
         } catch (e) {
           if (e instanceof Error && e.message && e.message.includes('not a child')) {
             return child;
@@ -218,10 +222,10 @@
       };
 
       // Prevent auto-init by overriding CMS.init before script loads
-      window.CMS = window.CMS || {};
-      const originalInit = window.CMS.init;
+      (window as any).CMS = (window as any).CMS || {};
+      const originalInit = (window as any).CMS.init;
       let initCalled = false;
-      window.CMS.init = function() {
+      (window as any).CMS.init = function() {
         if (initCalled) {
           console.warn('CMS.init already called, skipping duplicate');
           return;
@@ -238,7 +242,7 @@
       script.onload = function() {
         setTimeout(function() {
           const root = document.getElementById('nc-root');
-          if (root && typeof CMS !== 'undefined' && window.CMS) {
+          if (root && typeof (window as any).CMS !== 'undefined' && (window as any).CMS) {
             // Show root
             root.style.display = 'block';
             
@@ -246,15 +250,15 @@
             const hideCMSLogin = function() {
               // Hide the CMS authentication page
               const authPage = root.querySelector('[class*="AuthenticationPage"]');
-              if (authPage) {
+              if (authPage instanceof HTMLElement) {
                 authPage.style.display = 'none';
               }
               
               // Find and hide the CMS login button, but trigger it from our header button
               const cmsLoginBtn = root.querySelector('button[class*="LoginButton"]');
-              if (cmsLoginBtn) {
+              if (cmsLoginBtn instanceof HTMLButtonElement) {
                 const headerBtn = document.getElementById('header-login-btn');
-                if (headerBtn) {
+                if (headerBtn instanceof HTMLButtonElement) {
                   headerBtn.style.display = 'flex';
                   headerBtn.onclick = function() {
                     cmsLoginBtn.click();
@@ -268,7 +272,7 @@
             if (!initCalled) {
               initCalled = true;
               try {
-                window.CMS.init();
+                (window as any).CMS.init();
                 // Wait a bit for CMS to render, then hide its login UI
                 setTimeout(hideCMSLogin, 500);
                 setTimeout(hideCMSLogin, 1000);
@@ -283,9 +287,14 @@
             
             // Watch for and remove duplicates aggressively
             const observer = new MutationObserver(function() {
-              if (root.children.length > 1) {
+              if (root && root.children.length > 1) {
                 while (root.children.length > 1) {
-                  root.removeChild(root.lastChild);
+                  const lastChild = root.lastChild;
+                  if (lastChild) {
+                    root.removeChild(lastChild);
+                  } else {
+                    break;
+                  }
                 }
               }
             });
@@ -293,9 +302,14 @@
             
             // Remove duplicates immediately and periodically
             function removeDuplicates() {
-              if (root.children.length > 1) {
+              if (root && root.children.length > 1) {
                 while (root.children.length > 1) {
-                  root.removeChild(root.lastChild);
+                  const lastChild = root.lastChild;
+                  if (lastChild) {
+                    root.removeChild(lastChild);
+                  } else {
+                    break;
+                  }
                 }
               }
               // Also hide Decap logo
@@ -311,9 +325,9 @@
               hideDecapLogo();
               // Also check for login button to move to header
               const cmsLoginBtn = root.querySelector('button[class*="LoginButton"]');
-              if (cmsLoginBtn) {
+              if (cmsLoginBtn instanceof HTMLButtonElement) {
                 const headerBtn = document.getElementById('header-login-btn');
-                if (headerBtn && headerBtn.style.display === 'none') {
+                if (headerBtn instanceof HTMLButtonElement && headerBtn.style.display === 'none') {
                   headerBtn.style.display = 'flex';
                   headerBtn.onclick = function() {
                     cmsLoginBtn.click();
