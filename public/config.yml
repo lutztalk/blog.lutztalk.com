@@ -2,7 +2,7 @@ backend:
   name: github
   repo: lutztalk/blog.lutztalk.com
   branch: main
-  base_url: https://blog.lutztalk.com
+  base_url: https://decap-oauth-proxy.austingrierlutz-dac.workers.dev
   auth_endpoint: auth
   auth_type: pkce
   auth_scope: repo
