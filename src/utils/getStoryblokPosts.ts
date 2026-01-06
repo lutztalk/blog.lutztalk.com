@@ -1,5 +1,14 @@
 import { useStoryblokApi } from "@storyblok/astro";
 
+// Debug: Log token info
+if (import.meta.env.DEV) {
+  console.log("[Storyblok Debug] STORYBLOK_TOKEN from env:", 
+    import.meta.env.STORYBLOK_TOKEN ? 
+    `${import.meta.env.STORYBLOK_TOKEN.substring(0, 10)}...` : 
+    "NOT SET"
+  );
+}
+
 export interface StoryblokPost {
   id: string;
   slug: string;
@@ -23,28 +32,52 @@ export async function getStoryblokPosts(): Promise<StoryblokPost[]> {
   const storyblokApi = useStoryblokApi();
   
   try {
-    // First, try to get stories from blog/ folder
-    let { data } = await storyblokApi.get("cdn/stories", {
-      starts_with: "blog/",
+    console.log("[Storyblok] Fetching stories...");
+    console.log("[Storyblok] Token present:", !!import.meta.env.STORYBLOK_TOKEN);
+    console.log("[Storyblok] Version:", import.meta.env.DEV ? "draft" : "published");
+    
+    // First, try getting ALL stories to see what we have
+    console.log("[Storyblok] Fetching all stories first...");
+    const allData = await storyblokApi.get("cdn/stories", {
       version: import.meta.env.DEV ? "draft" : "published",
       per_page: 100,
     });
-
-    let stories = data.stories || [];
     
-    // If no stories found in blog/, try getting all stories and filter by component type
+    console.log("[Storyblok] All stories response:", {
+      total: allData.data?.stories?.length || 0,
+      stories: allData.data?.stories?.map((s: any) => ({
+        name: s.name,
+        slug: s.slug,
+        full_slug: s.full_slug,
+        component: s.content?.component,
+        published: s.published_at,
+      })) || []
+    });
+    
+    let stories = allData.data?.stories || [];
+    
+    // Filter by component type (blogPost) or check if in blog folder
+    stories = stories.filter((story: any) => {
+      const component = story.content?.component;
+      const inBlogFolder = story.full_slug?.startsWith("blog/") || story.slug?.startsWith("blog/");
+      const matches = component === "blogPost" || inBlogFolder;
+      
+      if (import.meta.env.DEV) {
+        console.log(`[Storyblok] Story "${story.name}": component=${component}, inBlogFolder=${inBlogFolder}, matches=${matches}`);
+      }
+      
+      return matches;
+    });
+    
+    // If still no stories, try with starts_with filter
     if (stories.length === 0) {
-      console.log("[Storyblok] No stories found in blog/ folder, trying all stories...");
-      const allData = await storyblokApi.get("cdn/stories", {
+      console.log("[Storyblok] No stories found with component filter, trying starts_with=blog/...");
+      const blogData = await storyblokApi.get("cdn/stories", {
+        starts_with: "blog/",
         version: import.meta.env.DEV ? "draft" : "published",
         per_page: 100,
       });
-      
-      // Filter by component type (blogPost) or check if slug contains blog
-      stories = (allData.data.stories || []).filter((story: any) => {
-        const component = story.content?.component || story.content?._uid;
-        return component === "blogPost" || story.slug?.includes("blog") || story.full_slug?.includes("blog");
-      });
+      stories = blogData.data?.stories || [];
     }
     
     // Log for debugging
