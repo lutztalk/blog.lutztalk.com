@@ -1,21 +1,19 @@
 ---
-import { getCollection } from "astro:content";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Socials from "@/components/Socials.astro";
 import LinkButton from "@/components/LinkButton.astro";
-import Card from "@/components/Card.astro";
-import getSortedPosts from "@/utils/getSortedPosts";
+import StoryblokCard from "@/components/StoryblokCard.astro";
+import { getStoryblokPosts, sortStoryblokPosts } from "@/utils/getStoryblokPosts";
 import IconArrowRight from "@/assets/icons/IconArrowRight.svg";
 import { SITE } from "@/config";
 import { SOCIALS } from "@/constants";
 
-const posts = await getCollection("blog");
-
-const sortedPosts = getSortedPosts(posts);
-const featuredPosts = sortedPosts.filter(({ data }) => data.featured);
-const recentPosts = sortedPosts.filter(({ data }) => !data.featured);
+const posts = await getStoryblokPosts();
+const sortedPosts = sortStoryblokPosts(posts);
+const featuredPosts = sortedPosts.filter(post => post.data.featured);
+const recentPosts = sortedPosts.filter(post => !post.data.featured);
 ---
 
 <Layout>
@@ -47,8 +45,8 @@ const recentPosts = sortedPosts.filter(({ data }) => !data.featured);
         >
           <h2 class="text-2xl font-semibold tracking-wide">Featured</h2>
           <ul>
-            {featuredPosts.map(data => (
-              <Card variant="h3" {...data} />
+            {featuredPosts.map(post => (
+              <StoryblokCard variant="h3" post={post} />
             ))}
           </ul>
         </section>
@@ -61,8 +59,8 @@ const recentPosts = sortedPosts.filter(({ data }) => !data.featured);
           <h2 class="text-2xl font-semibold tracking-wide">Recent Posts</h2>
           <ul>
             {recentPosts.map(
-              (data, index) =>
-                index < SITE.postPerIndex && <Card variant="h3" {...data} />
+              (post, index) =>
+                index < SITE.postPerIndex && <StoryblokCard variant="h3" post={post} />
             )}
           </ul>
         </section>

@@ -1,0 +1,29 @@
+---
+import { renderRichText } from "@storyblok/astro";
+import type { StoryblokPost } from "@/utils/getStoryblokPosts";
+
+type Props = {
+  post: StoryblokPost;
+};
+
+const { post } = Astro.props;
+const content = post.data.content;
+
+// Render rich text if it's a Storyblok rich text object, otherwise render as HTML
+let renderedContent: string = "";
+if (content) {
+  if (typeof content === 'object' && (content as any).type === 'doc') {
+    // It's a Storyblok rich text document
+    renderedContent = renderRichText(content as any);
+  } else if (typeof content === 'string') {
+    // It's plain HTML or markdown
+    renderedContent = content;
+  } else {
+    // Try to render as rich text anyway
+    renderedContent = renderRichText(content as any);
+  }
+}
+---
+
+{renderedContent && <div set:html={renderedContent} />}
+

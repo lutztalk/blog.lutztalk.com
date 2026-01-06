@@ -1,18 +1,18 @@
 ---
 import type { GetStaticPaths } from "astro";
-import { getCollection } from "astro:content";
 import Main from "@/layouts/Main.astro";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
-import Card from "@/components/Card.astro";
-import Pagination from "@/components/Pagination.astro";
-import getSortedPosts from "@/utils/getSortedPosts";
+import StoryblokCard from "@/components/StoryblokCard.astro";
+import StoryblokPagination from "@/components/StoryblokPagination.astro";
+import { getStoryblokPosts, sortStoryblokPosts } from "@/utils/getStoryblokPosts";
 import { SITE } from "@/config";
 
 export const getStaticPaths = (async ({ paginate }) => {
-  const posts = await getCollection("blog", ({ data }) => !data.draft);
-  return paginate(getSortedPosts(posts), { pageSize: SITE.postPerPage });
+  const posts = await getStoryblokPosts();
+  const sortedPosts = sortStoryblokPosts(posts);
+  return paginate(sortedPosts, { pageSize: SITE.postPerPage });
 }) satisfies GetStaticPaths;
 
 const { page } = Astro.props;
@@ -22,11 +22,11 @@ const { page } = Astro.props;
   <Header />
   <Main pageTitle="Posts" pageDesc="All the articles I've posted.">
     <ul>
-      {page.data.map(data => <Card {...data} />)}
+      {page.data.map((post) => <StoryblokCard post={post} />)}
     </ul>
   </Main>
 
-  <Pagination {page} />
+  <StoryblokPagination {page} />
 
   <Footer noMarginTop={page.lastPage > 1} />
 </Layout>

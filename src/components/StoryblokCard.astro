@@ -1,0 +1,34 @@
+---
+import { slugifyStr } from "@/utils/slugify";
+import Datetime from "./Datetime.astro";
+import type { StoryblokPost } from "@/utils/getStoryblokPosts";
+
+type Props = {
+  variant?: "h2" | "h3";
+  post: StoryblokPost;
+};
+
+const { variant: Heading = "h2", post } = Astro.props;
+const { title, description, pubDatetime, modDatetime } = post.data;
+const postUrl = `/posts/${post.slug}`;
+---
+
+<li class="my-6">
+  <a
+    href={postUrl}
+    class:list={[
+      "inline-block text-lg font-medium text-accent",
+      "decoration-dashed underline-offset-4 hover:underline",
+      "focus-visible:no-underline focus-visible:underline-offset-0",
+    ]}
+  >
+    <Heading style={{ viewTransitionName: slugifyStr(title) }}>
+      {title}
+    </Heading>
+  </a>
+  <div class="flex items-center gap-2 my-1">
+    <Datetime pubDatetime={pubDatetime} modDatetime={modDatetime} />
+  </div>
+  <p>{description}</p>
+</li>
+
