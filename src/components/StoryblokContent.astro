@@ -14,13 +14,15 @@ let renderedContent: string = "";
 if (content) {
   if (typeof content === 'object' && (content as any).type === 'doc') {
     // It's a Storyblok rich text document
-    renderedContent = renderRichText(content as any);
+    const rendered = renderRichText(content as any);
+    renderedContent = rendered || "";
   } else if (typeof content === 'string') {
     // It's plain HTML or markdown
     renderedContent = content;
   } else {
     // Try to render as rich text anyway
-    renderedContent = renderRichText(content as any);
+    const rendered = renderRichText(content as any);
+    renderedContent = rendered || "";
   }
 }
 ---
