@@ -1,0 +1,56 @@
+---
+import { renderRichText } from "@storyblok/astro";
+import type { StoryblokPost } from "@/utils/getStoryblokPosts";
+import { getReadingTime } from "@/utils/getReadingTime";
+
+type Props = {
+  post: StoryblokPost;
+  class?: string;
+  size?: "sm" | "lg";
+};
+
+const { post, class: className = "", size = "sm" } = Astro.props;
+const content = post.data.content;
+
+// Extract text from Storyblok rich text content
+let textContent = "";
+if (content) {
+  if (typeof content === 'object' && content !== null) {
+    // It's a Storyblok rich text object - render it to HTML first, then extract text
+    try {
+      const html = renderRichText(content as any);
+      // Remove HTML tags to get plain text
+      if (html) {
+        textContent = html.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
+      }
+    } catch (e) {
+      // If rendering fails, try to extract text from the structure
+      if (Array.isArray(content)) {
+        textContent = JSON.stringify(content);
+      } else if ((content as any).content) {
+        // Try to extract from content array
+        const extractText = (node: any): string => {
+          if (typeof node === 'string') return node;
+          if (node.text) return node.text;
+          if (node.content && Array.isArray(node.content)) {
+            return node.content.map(extractText).join(' ');
+          }
+          return '';
+        };
+        textContent = extractText(content);
+      }
+    }
+  } else if (typeof content === 'string') {
+    // It's already plain text or HTML
+    textContent = content.replace(/<[^>]+>/g, "").trim();
+  }
+}
+
+const readingTime = getReadingTime(textContent);
+const readingTimeText = readingTime === 1 ? "1 min read" : `${readingTime} min read`;
+---
+
+<span class:list={["opacity-80 text-sm", { "sm:text-base": size === "lg" }, className]}>
+  {readingTimeText}
+</span>
+
