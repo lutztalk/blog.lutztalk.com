@@ -183,10 +183,10 @@
         }
       };
 
-      // Set site_id for authentication
+      // Set site_id for authentication - must match config.yml
       const siteId = window.location.hostname === 'localhost' 
         ? 'localhost:4321' 
-        : window.location.hostname;
+        : 'blog.lutztalk.com';
 
       // Override fetch to modify auth URLs
       const originalFetch = window.fetch;
@@ -200,8 +200,19 @@
       // Override window.open to fix auth URLs
       const originalOpen = window.open;
       window.open = function(url, ...rest) {
-        if (url && typeof url === 'string' && url.includes('site_id=demo.decapcms.org')) {
-          url = url.replace('site_id=demo.decapcms.org', 'site_id=' + siteId);
+        if (url && typeof url === 'string') {
+          // Fix site_id in auth URLs
+          if (url.includes('site_id=demo.decapcms.org')) {
+            url = url.replace('site_id=demo.decapcms.org', 'site_id=' + siteId);
+          }
+          // Fix site_id if it's localhost in production
+          if (url.includes('site_id=localhost:4321') && window.location.hostname !== 'localhost') {
+            url = url.replace('site_id=localhost:4321', 'site_id=' + siteId);
+          }
+          // Ensure auth URL uses correct base_url
+          if (url.includes('/auth?') && !url.startsWith('http')) {
+            url = window.location.origin + url;
+          }
         }
         return originalOpen.call(this, url, ...rest);
       };
