@@ -246,8 +246,17 @@
             // Show root
             root.style.display = 'block';
             
-            // Hide CMS login UI and show our header button
+            // Check if we have a token in the URL hash (OAuth callback)
+            const hash = window.location.hash;
+            const hasToken = hash.includes('token=');
+            
+            // Hide CMS login UI and show our header button (only if not processing OAuth token)
             const hideCMSLogin = function() {
+              // Don't hide if we're processing an OAuth token
+              if (hasToken) {
+                return;
+              }
+              
               // Hide the CMS authentication page
               const authPage = root.querySelector('[class*="AuthenticationPage"]');
               if (authPage instanceof HTMLElement) {
@@ -273,16 +282,35 @@
               initCalled = true;
               try {
                 (window as any).CMS.init();
-                // Wait a bit for CMS to render, then hide its login UI
-                setTimeout(hideCMSLogin, 500);
-                setTimeout(hideCMSLogin, 1000);
-                setTimeout(hideCMSLogin, 2000);
+                
+                // If we have a token, let CMS process it first before hiding login UI
+                if (hasToken) {
+                  // Wait longer for CMS to process the token and authenticate
+                  setTimeout(function() {
+                    // Check if CMS is now authenticated (no auth page visible)
+                    const authPage = root.querySelector('[class*="AuthenticationPage"]');
+                    if (!authPage) {
+                      // CMS is authenticated, hide the login button in header
+                      const headerBtn = document.getElementById('header-login-btn');
+                      if (headerBtn instanceof HTMLElement) {
+                        headerBtn.style.display = 'none';
+                      }
+                    }
+                  }, 2000);
+                } else {
+                  // No token, hide login UI as usual
+                  setTimeout(hideCMSLogin, 500);
+                  setTimeout(hideCMSLogin, 1000);
+                  setTimeout(hideCMSLogin, 2000);
+                }
               } catch (e) {
                 console.error('Error initializing CMS:', e);
               }
             } else {
-              // If already initialized, still try to hide login UI
-              setTimeout(hideCMSLogin, 500);
+              // If already initialized, still try to hide login UI (if no token)
+              if (!hasToken) {
+                setTimeout(hideCMSLogin, 500);
+              }
             }
             
             // Watch for and remove duplicates aggressively

@@ -4,7 +4,6 @@ backend:
   branch: main
   base_url: https://decap-oauth-proxy.austingrierlutz-dac.workers.dev
   auth_endpoint: auth
-  auth_type: pkce
   auth_scope: repo
   site_id: blog.lutztalk.com
   app_id: Ov23lijDHaq5UiGv0AUI
