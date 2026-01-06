@@ -293,41 +293,65 @@
                     try {
                       const cms = (window as any).CMS.get();
                       if (cms && cms.backend) {
-                        // For GitHub backend, we need to store the token and mark as authenticated
-                        // Store token in localStorage (Decap CMS uses this)
-                        localStorage.setItem('netlify-cms-user', JSON.stringify({
-                          token: token,
-                          provider: 'github'
-                        }));
-                        
-                        // Try to authenticate the backend
-                        if (cms.backend.authenticate) {
-                          cms.backend.authenticate({ token: token });
+                        // For GitHub backend, we need to set the token in the API client
+                        // The GitHub backend stores the token in its API client
+                        if (cms.backend.api && cms.backend.api.client) {
+                          // Set the token in the GitHub API client
+                          cms.backend.api.client.token = token;
+                          cms.backend.api.client.authorization = 'token ' + token;
                         }
                         
-                        // Mark backend as authenticated
-                        if (cms.backend.currentUser) {
-                          cms.backend.currentUser = () => Promise.resolve({ 
-                            login: 'authenticated', 
+                        // Also try to set it directly on the backend
+                        if (cms.backend.token) {
+                          cms.backend.token = token;
+                        }
+                        
+                        // Store token in localStorage (Decap CMS uses this for persistence)
+                        localStorage.setItem('netlify-cms-user', JSON.stringify({
+                          token: token,
+                          backend: 'github',
+                          login: 'authenticated'
+                        }));
+                        
+                        // Override currentUser to return authenticated user
+                        const originalCurrentUser = cms.backend.currentUser;
+                        cms.backend.currentUser = function() {
+                          return Promise.resolve({
+                            login: 'authenticated',
                             name: 'User',
                             token: token
                           });
+                        };
+                        
+                        // Mark backend as authenticated by setting internal state
+                        if (cms.backend.authenticated) {
+                          cms.backend.authenticated = true;
                         }
                         
                         // Trigger backend to check status and load content
                         if (cms.backend.status) {
-                          cms.backend.status();
+                          cms.backend.status().then(function() {
+                            // After status check, try to load the CMS content
+                            if (cms.backend.listAllEntries) {
+                              cms.backend.listAllEntries();
+                            }
+                          });
                         }
                         
-                        // Clear the token from URL after a moment
+                        // Force a refresh of the CMS UI
                         setTimeout(function() {
+                          // Clear the token from URL
                           window.history.replaceState({}, '', '/admin');
-                        }, 500);
+                          // Trigger CMS to refresh
+                          if (cms.backend && cms.backend.status) {
+                            cms.backend.status();
+                          }
+                        }, 1000);
                       }
                     } catch (e) {
                       console.error('Error authenticating with token:', e);
                     }
-                  }, 1500);
+                  }, 2000);
                   
                   // Wait longer for CMS to process the token and authenticate
                   setTimeout(function() {
