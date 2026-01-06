@@ -37,6 +37,16 @@
       }
     };
 
+    // Set site_id for authentication
+    if (typeof window !== 'undefined') {
+      window.netlifyIdentity = window.netlifyIdentity || {};
+      // Use the current origin for local development, or the production domain
+      const siteId = window.location.hostname === 'localhost' 
+        ? 'localhost:4321' 
+        : 'blog.lutztalk.com';
+      window.netlifyIdentity.siteId = siteId;
+    }
+
     // Initialize CMS after script loads
     (function() {
       function initCMS() {
