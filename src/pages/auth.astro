@@ -27,25 +27,27 @@
         }
       };
     })();
-  </script>
-  <script src="https://unpkg.com/decap-cms@3.8.0/dist/decap-cms.js"></script>
-  <script is:inline>
-    // Let Decap CMS handle the OAuth callback
-    // The CMS will automatically process the URL parameters and complete authentication
-    (function() {
-      function initCMS() {
-        var CMS = window.CMS;
-        if (typeof CMS !== 'undefined' && CMS) {
-          CMS.init();
+    
+    // Load CMS script and initialize after it loads
+    var script = document.createElement('script');
+    script.src = 'https://unpkg.com/decap-cms@3.8.0/dist/decap-cms.js';
+    script.onload = function() {
+      // Wait a bit for CMS to be fully available
+      setTimeout(function() {
+        var root = document.getElementById('nc-root');
+        if (root && typeof window.CMS !== 'undefined' && window.CMS) {
+          // Show root
+          root.style.display = 'block';
+          // Initialize CMS - it will handle the OAuth callback automatically
+          try {
+            window.CMS.init();
+          } catch (e) {
+            console.error('Error initializing CMS:', e);
+          }
         }
-      }
-      
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initCMS);
-      } else {
-        initCMS();
-      }
-    })();
+      }, 100);
+    };
+    document.head.appendChild(script);
   </script>
 </body>
 </html>
