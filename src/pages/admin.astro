@@ -121,22 +121,29 @@
         return originalOpen.call(this, url, ...rest);
       };
 
-      // Prevent CMS from auto-initializing
-      window.CMS_MANUAL_INIT = true;
+      // Prevent CMS from auto-initializing by temporarily hiding the root
+      const root = document.getElementById('nc-root');
+      root.style.display = 'none';
 
-      // Load and initialize CMS
+      // Load and initialize CMS manually
       const script = document.createElement('script');
       script.src = 'https://unpkg.com/decap-cms@3.8.0/dist/decap-cms.js';
       script.onload = function() {
-        // Wait a bit for CMS to be fully loaded
+        // Wait for CMS to load, then initialize manually
         setTimeout(function() {
-          if (typeof CMS !== 'undefined' && window.CMS && !window.CMS._initialized) {
+          if (typeof CMS !== 'undefined' && window.CMS) {
             try {
-              window.CMS._initialized = true;
-              window.CMS.init();
+              // Show root and initialize
+              root.style.display = 'block';
               
-              // Remove duplicate instances after init
-              setTimeout(function() {
+              // Initialize only once
+              if (!window.CMS._initialized) {
+                window.CMS._initialized = true;
+                window.CMS.init();
+              }
+              
+              // Watch for and remove duplicates
+              const observer = new MutationObserver(function(mutations) {
                 const root = document.getElementById('nc-root');
                 if (root && root.children.length > 1) {
                   // Keep only the first child, remove the rest
@@ -144,7 +151,18 @@
                     root.removeChild(root.lastChild);
                   }
                 }
-              }, 1000);
+              });
+              
+              observer.observe(root, { childList: true });
+              
+              // Also check immediately
+              setTimeout(function() {
+                if (root && root.children.length > 1) {
+                  while (root.children.length > 1) {
+                    root.removeChild(root.lastChild);
+                  }
+                }
+              }, 500);
             } catch (e) {
               console.error('Error initializing CMS:', e);
               window.CMS._initialized = false;
