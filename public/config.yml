@@ -7,6 +7,7 @@ backend:
   auth_type: pkce
   auth_scope: repo
   site_id: blog.lutztalk.com
+  app_id: Ov23lijDHaq5UiGv0AUI
 
 media_folder: "public/assets"
 public_folder: "/assets"
