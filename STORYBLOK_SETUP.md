@@ -40,30 +40,66 @@ STORYBLOK_TOKEN=your-public-token-here
 5. Click **Save**
 6. Redeploy your site (or it will auto-deploy on the next push)
 
-## Step 4: Create Content Structure in Storyblok
+## Step 4: Create a Blog Post Component in Storyblok
 
-You'll need to create a "Blog Post" content type and organize your posts:
+In Storyblok, content types are called "Components" or "Blocks". Here's how to create one:
 
-1. In Storyblok, go to **Content** → **Content Types**
-2. Click **Create new**
-3. Name it "Blog Post" (or "blogPost" - the API will use the slug)
-4. Add the following fields:
-   - **title** (Text field, required) - The post title
-   - **description** (Textarea, required) - SEO description
-   - **author** (Text field, default: "Austin Lutz") - Author name
-   - **publishDate** (Date field) - Publication date
-   - **modifiedDate** (Date field, optional) - Last modified date
-   - **featured** (Boolean field, default: false) - Feature on homepage
-   - **draft** (Boolean field, default: false) - Hide from site
-   - **tags** (Multi-option field or Tags field) - Post tags
-   - **content** (Rich text field) - The main post content (use Rich Text)
+1. **Go to Components:**
+   - In your Storyblok space, click on **Components** in the left sidebar (or go to **Settings** → **Components**)
 
-5. **Create a folder structure:**
-   - In Storyblok, go to **Content**
-   - Create a folder called "blog" (this is important - posts should be in `blog/` folder)
-   - All your blog posts should be created inside this folder
+2. **Create a New Component:**
+   - Click **Create new block** or **Add Component**
+   - In the modal that appears:
+     - **Technical name:** Enter `blogPost` (this is what the API will use)
+     - **Description:** Enter "Blog Post" (this is just for display)
+     - **Select block type:** Choose **Content type block** (the first option)
+   - Click **Add Block**
 
-**Important:** The slug structure should be `blog/your-post-slug` for posts to be found correctly.
+3. **Add Fields to Your Component:**
+   - You'll now see the component editor
+   - Click **Add field** for each field below:
+   
+   **Required Fields:**
+   - **title** (Field type: Text, Required: Yes) - The post title
+   - **description** (Field type: Textarea, Required: Yes) - SEO description
+   - **content** (Field type: Rich Text, Required: Yes) - The main post content
+   
+   **Optional Fields:**
+   - **author** (Field type: Text, Default: "Austin Lutz") - Author name
+   - **publishDate** (Field type: Date) - Publication date
+   - **modifiedDate** (Field type: Date) - Last modified date
+   - **featured** (Field type: Boolean, Default: false) - Feature on homepage
+   - **draft** (Field type: Boolean, Default: false) - Hide from site
+   - **tags** (Field type: Tags or Multi-option) - Post tags
+
+4. **Save the Component:**
+   - Click **Save** in the top right
+
+## Step 5: Create Your First Blog Post
+
+1. **Go to Content:**
+   - Click **Content** in the left sidebar
+
+2. **Create a Blog Folder:**
+   - Click the **+** button or **Create new**
+   - Select **Folder**
+   - Name it `blog`
+   - Click **Create**
+
+3. **Create Your First Post:**
+   - Click on the `blog` folder
+   - Click **Create new** or the **+** button
+   - Select your `blogPost` component
+   - Fill in the fields:
+     - **Title:** Your post title
+     - **Description:** A brief description
+     - **Content:** Write your post (use the rich text editor)
+     - Set **Publish Date** if you want
+     - Set **Featured** to true if you want it on the homepage
+     - Leave **Draft** as false to publish it
+   - Click **Publish** (top right)
+
+**Important:** Make sure posts are created inside the `blog` folder. The slug will be `blog/your-post-slug` automatically.
 
 ## Step 5: Create Your First Post
 
