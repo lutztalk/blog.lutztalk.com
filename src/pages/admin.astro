@@ -56,6 +56,11 @@
     [class*="nc-root"] [class*="decap"],
     [class*="nc-root"] [class*="logo"] + *,
     [class*="nc-root"] [class*="logo"] ~ *,
+    /* Hide specific Decap logo classes */
+    [class*="DecapLogoIcon"],
+    [class*="exus10f3"],
+    [class*="css-rdgl1o-IconWrapper-DecapLogoIcon"],
+    [class*="e1jeq5dr1"],
     /* Hide any element containing "Decap" text */
     [class*="nc-root"] *:contains("Decap"),
     /* Hide duplicate CMS instances - keep only the first one */
@@ -84,8 +89,29 @@
       const root = document.getElementById('nc-root');
       if (!root) return;
       
-      // Only target elements that are clearly just the logo
-      // Look for elements with exactly "Decap" text and no other content
+      // Hide specific Decap logo classes
+      const logoSelectors = [
+        '[class*="DecapLogoIcon"]',
+        '[class*="exus10f3"]',
+        '[class*="css-rdgl1o-IconWrapper-DecapLogoIcon"]',
+        '[class*="e1jeq5dr1"]'
+      ];
+      
+      logoSelectors.forEach(selector => {
+        const elements = root.querySelectorAll(selector);
+        elements.forEach(el => {
+          // Skip if inside a button
+          if (!el.closest('button') && !el.closest('[role="button"]')) {
+            el.style.display = 'none';
+            el.style.visibility = 'hidden';
+            el.style.opacity = '0';
+            el.style.height = '0';
+            el.style.width = '0';
+          }
+        });
+      });
+      
+      // Also hide elements with exactly "Decap" text
       const allElements = root.querySelectorAll('*');
       allElements.forEach(el => {
         // Always skip buttons and anything inside buttons
@@ -100,33 +126,12 @@
         const text = (el.textContent || '').trim();
         const className = (el.className || '').toString();
         
-        // Only hide if:
-        // 1. Text is exactly "Decap" (5 characters, nothing else)
-        // 2. OR has a logo class but is NOT a button
-        // 3. AND doesn't contain "Login" or "GitHub" anywhere
-        const isJustDecap = text === 'Decap' && text.length === 5;
-        const hasLogoClass = className.includes('logo') && !className.includes('button');
-        const hasNoLoginText = !text.includes('Login') && !text.includes('GitHub');
-        
-        if ((isJustDecap || hasLogoClass) && hasNoLoginText) {
-          // Double check it's not inside a button
-          let parent = el.parentElement;
-          let isInsideButton = false;
-          while (parent && parent !== root) {
-            if (parent.tagName === 'BUTTON' || 
-                parent.getAttribute('role') === 'button' ||
-                (parent.className && parent.className.toString().includes('button'))) {
-              isInsideButton = true;
-              break;
-            }
-            parent = parent.parentElement;
-          }
-          
-          if (!isInsideButton) {
-            el.style.display = 'none';
-            el.style.visibility = 'hidden';
-            el.style.opacity = '0';
-          }
+        // Hide if text is exactly "Decap" or has logo classes
+        if ((text === 'Decap' && text.length === 5) || 
+            (className.includes('DecapLogoIcon') || className.includes('exus10f3'))) {
+          el.style.display = 'none';
+          el.style.visibility = 'hidden';
+          el.style.opacity = '0';
         }
       });
     }
