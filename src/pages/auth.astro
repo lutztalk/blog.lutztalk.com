@@ -41,6 +41,28 @@
           // Initialize CMS - it will handle the OAuth callback automatically
           try {
             window.CMS.init();
+            
+            // If we're on the auth page with provider=github, try to trigger OAuth
+            var urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('provider') === 'github') {
+              // Wait for CMS to render, then find and click the login button
+              setTimeout(function() {
+                var loginBtn = root.querySelector('button');
+                if (loginBtn && loginBtn.textContent && loginBtn.textContent.includes('GitHub')) {
+                  // Try clicking the button to trigger OAuth
+                  loginBtn.click();
+                } else {
+                  // If button not found, try to trigger auth directly via CMS
+                  if (window.CMS && window.CMS.get && window.CMS.get().backend) {
+                    try {
+                      window.CMS.get().backend.authenticate({ provider: 'github', scope: 'repo' });
+                    } catch (e) {
+                      console.log('Could not trigger auth automatically:', e);
+                    }
+                  }
+                }
+              }, 500);
+            }
           } catch (e) {
             console.error('Error initializing CMS:', e);
           }
