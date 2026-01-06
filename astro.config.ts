@@ -22,8 +22,8 @@ export default defineConfig({
     storyblok({
       accessToken: import.meta.env.STORYBLOK_TOKEN,
       apiOptions: {
-        // Optional: specify region if needed (us, eu, ap)
-        // region: 'us',
+        // Try US region first, fallback to EU
+        region: 'us',
       },
       components: {
         // We'll add components here as we create them
