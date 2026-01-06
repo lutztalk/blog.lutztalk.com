@@ -4,7 +4,7 @@ A minimal, responsive, accessible and SEO-friendly blog built with Astro. This b
 
 ## About
 
-I'm Austin Lutz. I work in the collaboration, IT, and networking space, but I have lots of interests. I write about AI, 5G, collaboration tools, networking, and broadcasting stuff that catches my eye. Sometimes it's deep dives, sometimes it's quick thoughts. Always learning, always building.
+I'm Austin Lutz. By day, I work in the collaboration, IT, and networking world—designing, building, and improving the systems people rely on to communicate. I write about AI, 5G, collaboration platforms, networking, and live broadcasting from the lens of real-world use, experimentation, and lessons learned. You'll find deep dives on collaboration tech, practical takes on AI as a force multiplier, and behind-the-scenes looks at projects I'm actively building. Always learning. Always building.
 
 Visit the blog at [blog.lutztalk.com](https://blog.lutztalk.com)
 
