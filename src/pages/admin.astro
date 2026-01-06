@@ -42,7 +42,7 @@
       max-width: 1200px;
       margin: 0 auto;
     }
-    /* Hide Decap CMS logo and branding */
+    /* Hide Decap CMS logo and branding - multiple selectors to catch all instances */
     [class*="nc-root"] [class*="logo"],
     [class*="nc-root"] a[href*="decapcms"],
     [class*="nc-root"] a[href*="netlify"],
@@ -50,12 +50,22 @@
     [class*="nc-root"] img[alt*="Netlify"],
     [class*="nc-root"] svg[class*="logo"],
     a[href*="decapcms.org"],
-    a[href*="netlify.com"] {
+    a[href*="netlify.com"],
+    /* Hide duplicate login buttons - keep only the first one */
+    #nc-root > div:not(:first-child),
+    #nc-root > div > div:not(:first-child) {
       display: none !important;
       visibility: hidden !important;
       opacity: 0 !important;
       height: 0 !important;
       width: 0 !important;
+      position: absolute !important;
+      left: -9999px !important;
+    }
+    
+    /* Show only the first CMS instance */
+    #nc-root > div:first-child {
+      display: block !important;
     }
   </style>
 </head>
@@ -111,6 +121,9 @@
         return originalOpen.call(this, url, ...rest);
       };
 
+      // Prevent CMS from auto-initializing
+      window.CMS_MANUAL_INIT = true;
+
       // Load and initialize CMS
       const script = document.createElement('script');
       script.src = 'https://unpkg.com/decap-cms@3.8.0/dist/decap-cms.js';
@@ -121,6 +134,17 @@
             try {
               window.CMS._initialized = true;
               window.CMS.init();
+              
+              // Remove duplicate instances after init
+              setTimeout(function() {
+                const root = document.getElementById('nc-root');
+                if (root && root.children.length > 1) {
+                  // Keep only the first child, remove the rest
+                  while (root.children.length > 1) {
+                    root.removeChild(root.lastChild);
+                  }
+                }
+              }, 1000);
             } catch (e) {
               console.error('Error initializing CMS:', e);
               window.CMS._initialized = false;
