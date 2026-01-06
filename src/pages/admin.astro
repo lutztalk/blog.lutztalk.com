@@ -24,6 +24,19 @@
   <div id="nc-root"></div>
   <script src="https://unpkg.com/decap-cms@3.8.0/dist/decap-cms.js"></script>
   <script>
+    // Suppress React errors - catch and ignore removeChild errors
+    const originalRemoveChild = Node.prototype.removeChild;
+    Node.prototype.removeChild = function(child) {
+      try {
+        return originalRemoveChild.call(this, child);
+      } catch (e) {
+        if (e instanceof Error && e.message && e.message.includes('not a child')) {
+          return child; // Return the child to prevent error
+        }
+        throw e;
+      }
+    };
+
     // Initialize CMS after script loads
     (function() {
       function initCMS() {
