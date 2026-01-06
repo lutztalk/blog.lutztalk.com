@@ -132,121 +132,121 @@
     }
     
     // Prevent duplicate initialization
-    if (window.CMS_INITIALIZED) {
+    if (!window.CMS_INITIALIZED) {
+      window.CMS_INITIALIZED = true;
+
+      // Suppress React errors - catch and ignore removeChild errors
+      const originalRemoveChild = Node.prototype.removeChild;
+      Node.prototype.removeChild = function(child) {
+        try {
+          return originalRemoveChild.call(this, child);
+        } catch (e) {
+          if (e instanceof Error && e.message && e.message.includes('not a child')) {
+            return child;
+          }
+          throw e;
+        }
+      };
+
+      // Set site_id for authentication
+      const siteId = window.location.hostname === 'localhost' 
+        ? 'localhost:4321' 
+        : window.location.hostname;
+
+      // Override fetch to modify auth URLs
+      const originalFetch = window.fetch;
+      window.fetch = function(...args) {
+        if (args[0] && typeof args[0] === 'string' && args[0].includes('site_id=demo.decapcms.org')) {
+          args[0] = args[0].replace('site_id=demo.decapcms.org', 'site_id=' + siteId);
+        }
+        return originalFetch.apply(this, args);
+      };
+
+      // Override window.open to fix auth URLs
+      const originalOpen = window.open;
+      window.open = function(url, ...rest) {
+        if (url && typeof url === 'string' && url.includes('site_id=demo.decapcms.org')) {
+          url = url.replace('site_id=demo.decapcms.org', 'site_id=' + siteId);
+        }
+        return originalOpen.call(this, url, ...rest);
+      };
+
+      // Prevent auto-init by overriding CMS.init before script loads
+      window.CMS = window.CMS || {};
+      const originalInit = window.CMS.init;
+      let initCalled = false;
+      window.CMS.init = function() {
+        if (initCalled) {
+          console.warn('CMS.init already called, skipping duplicate');
+          return;
+        }
+        initCalled = true;
+        if (originalInit) {
+          return originalInit.apply(this, arguments);
+        }
+      };
+
+      // Load CMS script
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/decap-cms@3.8.0/dist/decap-cms.js';
+      script.onload = function() {
+        setTimeout(function() {
+          const root = document.getElementById('nc-root');
+          if (root && typeof CMS !== 'undefined' && window.CMS) {
+            // Show root
+            root.style.display = 'block';
+            
+            // Initialize only if not already initialized
+            if (!initCalled) {
+              initCalled = true;
+              try {
+                window.CMS.init();
+              } catch (e) {
+                console.error('Error initializing CMS:', e);
+              }
+            }
+            
+            // Watch for and remove duplicates aggressively
+            const observer = new MutationObserver(function() {
+              if (root.children.length > 1) {
+                while (root.children.length > 1) {
+                  root.removeChild(root.lastChild);
+                }
+              }
+            });
+            observer.observe(root, { childList: true, subtree: true });
+            
+            // Remove duplicates immediately and periodically
+            function removeDuplicates() {
+              if (root.children.length > 1) {
+                while (root.children.length > 1) {
+                  root.removeChild(root.lastChild);
+                }
+              }
+              // Also hide Decap logo
+              hideDecapLogo();
+            }
+            removeDuplicates();
+            setTimeout(removeDuplicates, 100);
+            setTimeout(removeDuplicates, 500);
+            setTimeout(removeDuplicates, 1000);
+            
+            // Watch for Decap logo and hide it
+            const logoObserver = new MutationObserver(hideDecapLogo);
+            logoObserver.observe(root, { childList: true, subtree: true, characterData: true });
+            
+            // Run hideDecapLogo multiple times to catch it
+            setTimeout(hideDecapLogo, 100);
+            setTimeout(hideDecapLogo, 500);
+            setTimeout(hideDecapLogo, 1000);
+            setTimeout(hideDecapLogo, 2000);
+          }
+        }, 300);
+      };
+      document.head.appendChild(script);
+    } else {
       console.warn('CMS already initialized, skipping...');
-      return;
     }
-    window.CMS_INITIALIZED = true;
-
-    // Suppress React errors - catch and ignore removeChild errors
-    const originalRemoveChild = Node.prototype.removeChild;
-    Node.prototype.removeChild = function(child) {
-      try {
-        return originalRemoveChild.call(this, child);
-      } catch (e) {
-        if (e instanceof Error && e.message && e.message.includes('not a child')) {
-          return child;
-        }
-        throw e;
-      }
-    };
-
-    // Set site_id for authentication
-    const siteId = window.location.hostname === 'localhost' 
-      ? 'localhost:4321' 
-      : window.location.hostname;
-
-    // Override fetch to modify auth URLs
-    const originalFetch = window.fetch;
-    window.fetch = function(...args) {
-      if (args[0] && typeof args[0] === 'string' && args[0].includes('site_id=demo.decapcms.org')) {
-        args[0] = args[0].replace('site_id=demo.decapcms.org', 'site_id=' + siteId);
-      }
-      return originalFetch.apply(this, args);
-    };
-
-    // Override window.open to fix auth URLs
-    const originalOpen = window.open;
-    window.open = function(url, ...rest) {
-      if (url && typeof url === 'string' && url.includes('site_id=demo.decapcms.org')) {
-        url = url.replace('site_id=demo.decapcms.org', 'site_id=' + siteId);
-      }
-      return originalOpen.call(this, url, ...rest);
-    };
-
-    // Prevent auto-init by overriding CMS.init before script loads
-    window.CMS = window.CMS || {};
-    const originalInit = window.CMS.init;
-    let initCalled = false;
-    window.CMS.init = function() {
-      if (initCalled) {
-        console.warn('CMS.init already called, skipping duplicate');
-        return;
-      }
-      initCalled = true;
-      if (originalInit) {
-        return originalInit.apply(this, arguments);
-      }
-    };
-
-    // Load CMS script
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/decap-cms@3.8.0/dist/decap-cms.js';
-    script.onload = function() {
-      setTimeout(function() {
-        const root = document.getElementById('nc-root');
-        if (root && typeof CMS !== 'undefined' && window.CMS) {
-          // Show root
-          root.style.display = 'block';
-          
-          // Initialize only if not already initialized
-          if (!initCalled) {
-            initCalled = true;
-            try {
-              window.CMS.init();
-            } catch (e) {
-              console.error('Error initializing CMS:', e);
-            }
-          }
-          
-          // Watch for and remove duplicates aggressively
-          const observer = new MutationObserver(function() {
-            if (root.children.length > 1) {
-              while (root.children.length > 1) {
-                root.removeChild(root.lastChild);
-              }
-            }
-          });
-          observer.observe(root, { childList: true, subtree: true });
-          
-          // Remove duplicates immediately and periodically
-          function removeDuplicates() {
-            if (root.children.length > 1) {
-              while (root.children.length > 1) {
-                root.removeChild(root.lastChild);
-              }
-            }
-            // Also hide Decap logo
-            hideDecapLogo();
-          }
-          removeDuplicates();
-          setTimeout(removeDuplicates, 100);
-          setTimeout(removeDuplicates, 500);
-          setTimeout(removeDuplicates, 1000);
-          
-          // Watch for Decap logo and hide it
-          const logoObserver = new MutationObserver(hideDecapLogo);
-          logoObserver.observe(root, { childList: true, subtree: true, characterData: true });
-          
-          // Run hideDecapLogo multiple times to catch it
-          setTimeout(hideDecapLogo, 100);
-          setTimeout(hideDecapLogo, 500);
-          setTimeout(hideDecapLogo, 1000);
-          setTimeout(hideDecapLogo, 2000);
-        }
-      }, 300);
-    };
-    document.head.appendChild(script);
   </script>
 </body>
 </html>
