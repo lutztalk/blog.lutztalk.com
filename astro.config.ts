@@ -20,7 +20,7 @@ export default defineConfig({
       filter: page => SITE.showArchives || !page.endsWith("/archives"),
     }),
     storyblok({
-      accessToken: import.meta.env.STORYBLOK_TOKEN,
+      accessToken: import.meta.env.STORYBLOK_TOKEN || process.env.STORYBLOK_TOKEN,
       // Remove region to use default (will auto-detect)
       components: {
         // We'll add components here as we create them
