@@ -68,8 +68,9 @@ async function handleRequest(request, env) {
         return new Response(`Error: ${tokenData.error_description || tokenData.error}`, { status: 400 });
       }
 
-      // Redirect back to CMS with token
-      const redirectUrl = `https://blog.lutztalk.com/auth?token=${tokenData.access_token}&provider=github`;
+      // Redirect back to CMS admin page with token in hash (Decap CMS expects it in the hash)
+      // Decap CMS will extract the token from the URL hash
+      const redirectUrl = `https://blog.lutztalk.com/admin#/auth?token=${tokenData.access_token}&provider=github`;
       return Response.redirect(redirectUrl, 302);
     } catch (error) {
       return new Response(`Error: ${error.message}`, { status: 500 });

@@ -42,12 +42,18 @@
           try {
             window.CMS.init();
             
-            // If we're on the auth page with provider=github, try to trigger OAuth
+            // Check if we have a token from OAuth callback
             var urlParams = new URLSearchParams(window.location.search);
+            var token = urlParams.get('token');
             var code = urlParams.get('code'); // OAuth callback code
             var provider = urlParams.get('provider');
             
-            if (!code && provider === 'github') {
+            // If we have a token, the CMS should handle it automatically
+            // Just let it initialize normally
+            if (token && provider === 'github') {
+              // Token is present, CMS should handle authentication
+              // No action needed, just let CMS initialize
+            } else if (!code && provider === 'github') {
               // Wait for CMS to fully render, then try multiple methods to trigger OAuth
               setTimeout(function() {
                 // Method 1: Find and click the login button
