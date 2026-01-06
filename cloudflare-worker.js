@@ -7,8 +7,7 @@
  * 3. Set secrets:
  *    wrangler secret put GITHUB_CLIENT_ID
  *    wrangler secret put GITHUB_CLIENT_SECRET
- * 4. Update the account_id in wrangler.toml (or create it)
- * 5. Deploy: wrangler publish
+ * 4. Deploy: wrangler publish
  */
 
 addEventListener('fetch', event => {
@@ -16,15 +15,12 @@ addEventListener('fetch', event => {
 });
 
 async function handleRequest(request, event) {
-  // Get environment (secrets) from the event
-  const env = {
-    GITHUB_CLIENT_ID: event.env?.GITHUB_CLIENT_ID || '',
-    GITHUB_CLIENT_SECRET: event.env?.GITHUB_CLIENT_SECRET || '',
-  };
-
-async function handleRequest(request) {
   const url = new URL(request.url);
   const path = url.pathname;
+  
+  // Get secrets from environment (set via wrangler secret)
+  const GITHUB_CLIENT_ID = event.env?.GITHUB_CLIENT_ID || '';
+  const GITHUB_CLIENT_SECRET = event.env?.GITHUB_CLIENT_SECRET || '';
 
   // OAuth callback endpoint
   if (path === '/callback') {
@@ -82,4 +78,3 @@ async function handleRequest(request) {
 
   return new Response('Not Found', { status: 404 });
 }
-
