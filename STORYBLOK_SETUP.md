@@ -40,23 +40,30 @@ STORYBLOK_TOKEN=your-public-token-here
 5. Click **Save**
 6. Redeploy your site (or it will auto-deploy on the next push)
 
-## Step 4: Create Content Types in Storyblok
+## Step 4: Create Content Structure in Storyblok
 
-You'll need to create a "Blog Post" content type in Storyblok:
+You'll need to create a "Blog Post" content type and organize your posts:
 
 1. In Storyblok, go to **Content** → **Content Types**
 2. Click **Create new**
-3. Name it "Blog Post"
+3. Name it "Blog Post" (or "blogPost" - the API will use the slug)
 4. Add the following fields:
-   - **Title** (Text field, required)
-   - **Description** (Textarea, required)
-   - **Author** (Text field, default: "Austin Lutz")
-   - **Publish Date** (Date field)
-   - **Modified Date** (Date field, optional)
-   - **Featured** (Boolean field)
-   - **Draft** (Boolean field)
-   - **Tags** (Multi-option field or Tags field)
-   - **Content** (Rich text field or Markdown field)
+   - **title** (Text field, required) - The post title
+   - **description** (Textarea, required) - SEO description
+   - **author** (Text field, default: "Austin Lutz") - Author name
+   - **publishDate** (Date field) - Publication date
+   - **modifiedDate** (Date field, optional) - Last modified date
+   - **featured** (Boolean field, default: false) - Feature on homepage
+   - **draft** (Boolean field, default: false) - Hide from site
+   - **tags** (Multi-option field or Tags field) - Post tags
+   - **content** (Rich text field) - The main post content (use Rich Text)
+
+5. **Create a folder structure:**
+   - In Storyblok, go to **Content**
+   - Create a folder called "blog" (this is important - posts should be in `blog/` folder)
+   - All your blog posts should be created inside this folder
+
+**Important:** The slug structure should be `blog/your-post-slug` for posts to be found correctly.
 
 ## Step 5: Create Your First Post
 
