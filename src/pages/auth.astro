@@ -12,6 +12,22 @@
 </head>
 <body>
   <div id="nc-root"></div>
+  <script is:inline>
+    // Suppress React errors - catch and ignore removeChild errors
+    (function() {
+      const originalRemoveChild = Node.prototype.removeChild;
+      Node.prototype.removeChild = function(child) {
+        try {
+          return originalRemoveChild.call(this, child);
+        } catch (e) {
+          if (e instanceof Error && e.message && e.message.includes('not a child')) {
+            return child;
+          }
+          throw e;
+        }
+      };
+    })();
+  </script>
   <script src="https://unpkg.com/decap-cms@3.8.0/dist/decap-cms.js"></script>
   <script is:inline>
     // Let Decap CMS handle the OAuth callback
