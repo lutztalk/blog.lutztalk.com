@@ -4,7 +4,7 @@ A minimal, responsive, accessible and SEO-friendly blog built with Astro. This b
 
 ## About
 
-I'm Austin Lutz. I write about AI, 5G, collaboration tools, networking, and broadcasting stuff that catches my eye. Sometimes it's deep dives, sometimes it's quick thoughts. Always honest. Let's talk tech!
+I'm Austin Lutz. I work in the collaboration, IT, and networking space, but I have lots of interests. I write about AI, 5G, collaboration tools, networking, and broadcasting stuff that catches my eye. Sometimes it's deep dives, sometimes it's quick thoughts. Always learning, always building.
 
 Visit the blog at [blog.lutztalk.com](https://blog.lutztalk.com)
 
@@ -58,11 +58,19 @@ Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page
 
 Any static assets, like images, can be placed in the `public/` directory.
 
-All blog posts are stored in `src/data/blog` directory.
-
 ## 📝 Adding Posts
 
-To create a new blog post, create a new `.md` file in the `src/data/blog/` directory with the following frontmatter structure:
+This blog uses [Storyblok](https://www.storyblok.com/) as a headless CMS for managing content. To create a new blog post:
+
+1. Log in to your Storyblok space at https://app.storyblok.com/
+2. Navigate to **Content** → **blog** folder
+3. Click **Create new** and select your `blogPost` component
+4. Fill in the fields (title, description, content, etc.)
+5. Click **Publish**
+
+The site will automatically rebuild when you publish content (if webhooks are configured) or you can manually trigger a rebuild in Vercel.
+
+For more details, see [STORYBLOK_SETUP.md](./STORYBLOK_SETUP.md) and [WEBHOOK_SETUP.md](./WEBHOOK_SETUP.md).
 
 ```markdown
 ---
@@ -86,6 +94,7 @@ Your content here...
 ## 💻 Tech Stack
 
 **Main Framework** - [Astro](https://astro.build/)  
+**CMS** - [Storyblok](https://www.storyblok.com/)  
 **Type Checking** - [TypeScript](https://www.typescriptlang.org/)  
 **Styling** - [TailwindCSS](https://tailwindcss.com/)  
 **Static Search** - [Pagefind](https://pagefind.app/)  
