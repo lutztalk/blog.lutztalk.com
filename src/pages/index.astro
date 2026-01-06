@@ -11,6 +11,13 @@ import { SITE } from "@/config";
 import { SOCIALS } from "@/constants";
 
 const posts = await getStoryblokPosts();
+
+// Debug logging in development
+if (import.meta.env.DEV) {
+  console.log(`[Index] Total posts fetched: ${posts.length}`);
+  console.log(`[Index] Posts after filtering:`, posts.map(p => ({ title: p.data.title, draft: p.data.draft, slug: p.slug })));
+}
+
 const sortedPosts = sortStoryblokPosts(posts);
 const featuredPosts = sortedPosts.filter(post => post.data.featured);
 const recentPosts = sortedPosts.filter(post => !post.data.featured);

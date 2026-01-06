@@ -31,12 +31,27 @@ export async function getStoryblokPosts(): Promise<StoryblokPost[]> {
 
     const stories = data.stories || [];
     
+    // Log for debugging
+    if (import.meta.env.DEV) {
+      console.log(`[Storyblok] Found ${stories.length} stories`);
+      stories.forEach((story: any) => {
+        console.log(`  - ${story.name} (slug: ${story.slug}, full_slug: ${story.full_slug})`);
+        console.log(`    Published: ${story.published_at || 'No'}, Draft field: ${story.content.draft || false}`);
+      });
+    }
+    
     return stories.map((story: any) => {
       const content = story.content;
       
+      // Extract just the post slug (remove "blog/" prefix if present)
+      let postSlug = story.slug;
+      if (postSlug.startsWith("blog/")) {
+        postSlug = postSlug.replace("blog/", "");
+      }
+      
       return {
         id: story.id.toString(),
-        slug: story.slug,
+        slug: postSlug,
         data: {
           title: content.title || "",
           description: content.description || "",
@@ -56,6 +71,9 @@ export async function getStoryblokPosts(): Promise<StoryblokPost[]> {
     });
   } catch (error) {
     console.error("Error fetching Storyblok posts:", error);
+    if (error instanceof Error) {
+      console.error("Error details:", error.message);
+    }
     return [];
   }
 }
@@ -67,16 +85,32 @@ export async function getStoryblokPost(slug: string): Promise<StoryblokPost | nu
   const storyblokApi = useStoryblokApi();
   
   try {
-    const { data } = await storyblokApi.get(`cdn/stories/blog/${slug}`, {
-      version: import.meta.env.DEV ? "draft" : "published",
-    });
+    // Try with blog/ prefix first
+    let story;
+    try {
+      const { data } = await storyblokApi.get(`cdn/stories/blog/${slug}`, {
+        version: import.meta.env.DEV ? "draft" : "published",
+      });
+      story = data.story;
+    } catch (e) {
+      // If that fails, try without the prefix
+      const { data } = await storyblokApi.get(`cdn/stories/${slug}`, {
+        version: import.meta.env.DEV ? "draft" : "published",
+      });
+      story = data.story;
+    }
 
-    const story = data.story;
     const content = story.content;
+    
+    // Extract just the post slug (remove "blog/" prefix if present)
+    let postSlug = story.slug;
+    if (postSlug.startsWith("blog/")) {
+      postSlug = postSlug.replace("blog/", "");
+    }
     
     return {
       id: story.id.toString(),
-      slug: story.slug,
+      slug: postSlug,
       data: {
         title: content.title || "",
         description: content.description || "",
@@ -95,6 +129,9 @@ export async function getStoryblokPost(slug: string): Promise<StoryblokPost | nu
     };
   } catch (error) {
     console.error(`Error fetching Storyblok post ${slug}:`, error);
+    if (error instanceof Error) {
+      console.error("Error details:", error.message);
+    }
     return null;
   }
 }
