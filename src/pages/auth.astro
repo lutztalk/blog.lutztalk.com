@@ -1,7 +1,7 @@
 ---
 // This page handles the GitHub OAuth callback for Decap CMS.
-// The CMS will handle the OAuth flow, we just need this page to exist.
-// The CMS will process the callback and redirect appropriately.
+// Decap CMS will handle the OAuth flow automatically.
+// We just need this page to exist and let the CMS process the callback.
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -11,17 +11,25 @@
   <title>Authenticating...</title>
 </head>
 <body>
-  <script>
+  <div id="nc-root"></div>
+  <script src="https://unpkg.com/decap-cms@3.8.0/dist/decap-cms.js"></script>
+  <script is:inline>
     // Let Decap CMS handle the OAuth callback
-    // It will process the URL parameters and redirect to admin
-    if (window.opener) {
-      // If opened in popup, send message to parent
-      window.opener.postMessage({ type: 'oauth-callback', url: window.location.href }, '*');
-      window.close();
-    } else {
-      // If not in popup, redirect to admin
-      window.location.href = '/admin';
-    }
+    // The CMS will automatically process the URL parameters and complete authentication
+    (function() {
+      function initCMS() {
+        var CMS = window.CMS;
+        if (typeof CMS !== 'undefined' && CMS) {
+          CMS.init();
+        }
+      }
+      
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initCMS);
+      } else {
+        initCMS();
+      }
+    })();
   </script>
 </body>
 </html>
