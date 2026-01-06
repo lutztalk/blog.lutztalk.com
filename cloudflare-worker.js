@@ -21,12 +21,14 @@ async function handleRequest(request, env) {
   const path = url.pathname;
   
   // Get secrets from environment (set via wrangler secret)
-  const GITHUB_CLIENT_ID = env.GITHUB_CLIENT_ID || '';
-  const GITHUB_CLIENT_SECRET = env.GITHUB_CLIENT_SECRET || '';
+  const GITHUB_CLIENT_ID = env.GITHUB_CLIENT_ID;
+  const GITHUB_CLIENT_SECRET = env.GITHUB_CLIENT_SECRET;
   
   // Validate that secrets are set
   if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
-    return new Response('OAuth credentials not configured. Please set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET secrets.', { 
+    // Debug: Check what's in env
+    const envKeys = Object.keys(env || {}).join(', ');
+    return new Response(`OAuth credentials not configured.\n\nSecrets found: ${envKeys || 'none'}\n\nPlease set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET secrets using:\nwrangler secret put GITHUB_CLIENT_ID\nwrangler secret put GITHUB_CLIENT_SECRET`, { 
       status: 500,
       headers: { 'Content-Type': 'text/plain' }
     });
@@ -43,6 +45,9 @@ async function handleRequest(request, env) {
 
     try {
       // Exchange code for access token
+      // GitHub requires redirect_uri to match exactly what was used in authorization
+      const redirectUri = `${url.origin}/callback`;
+      
       const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
         method: 'POST',
         headers: {
@@ -53,6 +58,7 @@ async function handleRequest(request, env) {
           client_id: GITHUB_CLIENT_ID,
           client_secret: GITHUB_CLIENT_SECRET,
           code: code,
+          redirect_uri: redirectUri,
         }),
       });
 
