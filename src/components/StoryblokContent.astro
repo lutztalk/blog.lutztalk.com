@@ -9,23 +9,63 @@ type Props = {
 const { post } = Astro.props;
 const content = post.data.content;
 
+// Debug logging
+if (import.meta.env.DEV) {
+  console.log("[StoryblokContent] Content type:", typeof content);
+  console.log("[StoryblokContent] Content value:", content);
+  if (typeof content === 'object' && content !== null) {
+    console.log("[StoryblokContent] Content keys:", Object.keys(content));
+    console.log("[StoryblokContent] Content type property:", (content as any).type);
+  }
+}
+
 // Render rich text if it's a Storyblok rich text object, otherwise render as HTML
 let renderedContent: string = "";
 if (content) {
-  if (typeof content === 'object' && (content as any).type === 'doc') {
-    // It's a Storyblok rich text document
-    const rendered = renderRichText(content as any);
-    renderedContent = rendered || "";
+  if (typeof content === 'object' && content !== null) {
+    // Check if it's a Storyblok rich text document (has type: 'doc' or is an array)
+    if ((content as any).type === 'doc' || Array.isArray(content)) {
+      // It's a Storyblok rich text document
+      try {
+        const rendered = renderRichText(content as any);
+        renderedContent = rendered || "";
+        if (import.meta.env.DEV) {
+          console.log("[StoryblokContent] Rendered rich text length:", renderedContent.length);
+        }
+      } catch (e) {
+        console.error("[StoryblokContent] Error rendering rich text:", e);
+        renderedContent = "";
+      }
+    } else {
+      // It's an object but not a rich text doc - try to stringify or render
+      if (import.meta.env.DEV) {
+        console.log("[StoryblokContent] Content is object but not rich text, trying renderRichText anyway");
+      }
+      try {
+        const rendered = renderRichText(content as any);
+        renderedContent = rendered || "";
+      } catch (e) {
+        console.error("[StoryblokContent] Error:", e);
+        renderedContent = JSON.stringify(content);
+      }
+    }
   } else if (typeof content === 'string') {
     // It's plain HTML or markdown
     renderedContent = content;
-  } else {
-    // Try to render as rich text anyway
-    const rendered = renderRichText(content as any);
-    renderedContent = rendered || "";
+    if (import.meta.env.DEV) {
+      console.log("[StoryblokContent] Content is string, length:", renderedContent.length);
+    }
+  }
+} else {
+  if (import.meta.env.DEV) {
+    console.warn("[StoryblokContent] No content found for post:", post.data.title);
   }
 }
 ---
 
-{renderedContent && <div set:html={renderedContent} />}
+{renderedContent ? (
+  <div set:html={renderedContent} />
+) : (
+  <p class="text-muted">No content available for this post.</p>
+)}
 
