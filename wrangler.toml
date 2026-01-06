@@ -8,4 +8,5 @@ name = "decap-oauth-proxy"
 # You'll need to set these secrets:
 # wrangler secret put GITHUB_CLIENT_ID
 # wrangler secret put GITHUB_CLIENT_SECRET
+# Then deploy with: wrangler deploy
 

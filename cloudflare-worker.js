@@ -7,7 +7,7 @@
  * 3. Set secrets:
  *    wrangler secret put GITHUB_CLIENT_ID
  *    wrangler secret put GITHUB_CLIENT_SECRET
- * 4. Deploy: wrangler publish
+ * 4. Deploy: wrangler deploy
  */
 
 export default {
