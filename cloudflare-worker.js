@@ -10,17 +10,27 @@
  * 4. Deploy: wrangler publish
  */
 
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request, event));
-});
+export default {
+  async fetch(request, env) {
+    return handleRequest(request, env);
+  }
+};
 
-async function handleRequest(request, event) {
+async function handleRequest(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
   
   // Get secrets from environment (set via wrangler secret)
-  const GITHUB_CLIENT_ID = event.env?.GITHUB_CLIENT_ID || '';
-  const GITHUB_CLIENT_SECRET = event.env?.GITHUB_CLIENT_SECRET || '';
+  const GITHUB_CLIENT_ID = env.GITHUB_CLIENT_ID || '';
+  const GITHUB_CLIENT_SECRET = env.GITHUB_CLIENT_SECRET || '';
+  
+  // Validate that secrets are set
+  if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
+    return new Response('OAuth credentials not configured. Please set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET secrets.', { 
+      status: 500,
+      headers: { 'Content-Type': 'text/plain' }
+    });
+  }
 
   // OAuth callback endpoint
   if (path === '/callback') {
