@@ -42,7 +42,7 @@
       max-width: 1200px;
       margin: 0 auto;
     }
-    /* Hide Decap CMS logo and branding - multiple selectors to catch all instances */
+    /* Hide Decap CMS logo and branding - aggressive selectors */
     [class*="nc-root"] [class*="logo"],
     [class*="nc-root"] a[href*="decapcms"],
     [class*="nc-root"] a[href*="netlify"],
@@ -51,6 +51,13 @@
     [class*="nc-root"] svg[class*="logo"],
     a[href*="decapcms.org"],
     a[href*="netlify.com"],
+    /* Hide the Decap logo text and icon */
+    [class*="nc-root"] [class*="Decap"],
+    [class*="nc-root"] [class*="decap"],
+    [class*="nc-root"] [class*="logo"] + *,
+    [class*="nc-root"] [class*="logo"] ~ *,
+    /* Hide any element containing "Decap" text */
+    [class*="nc-root"] *:contains("Decap"),
     /* Hide duplicate login buttons - keep only the first one */
     #nc-root > div:not(:first-child),
     #nc-root > div > div:not(:first-child) {
@@ -61,6 +68,7 @@
       width: 0 !important;
       position: absolute !important;
       left: -9999px !important;
+      overflow: hidden !important;
     }
     
     /* Show only the first CMS instance */
@@ -79,6 +87,39 @@
   </div>
   <div id="nc-root" style="display: none;"></div>
   <script>
+    // Function to hide Decap logo aggressively
+    function hideDecapLogo() {
+      const root = document.getElementById('nc-root');
+      if (root) {
+        // Find and hide any element with Decap logo
+        const allElements = root.querySelectorAll('*');
+        allElements.forEach(el => {
+          const text = (el.textContent || '').trim();
+          const className = (el.className || '').toString();
+          const id = (el.id || '').toString();
+          
+          // Check if element contains "Decap" text or logo-related classes
+          if (text === 'Decap' || 
+              (text.includes('Decap') && text.length < 20) ||
+              className.includes('logo') || 
+              className.includes('Decap') || 
+              className.includes('decap') ||
+              id.includes('logo')) {
+            // Don't hide buttons, but hide logo elements
+            if (!el.closest('button') && !el.closest('[role="button"]') && el.tagName !== 'BUTTON') {
+              el.style.display = 'none';
+              el.style.visibility = 'hidden';
+              el.style.opacity = '0';
+              el.style.height = '0';
+              el.style.width = '0';
+              el.style.position = 'absolute';
+              el.style.left = '-9999px';
+            }
+          }
+        });
+      }
+    }
+    
     // Prevent duplicate initialization
     if (window.CMS_INITIALIZED) {
       console.warn('CMS already initialized, skipping...');
@@ -174,11 +215,23 @@
                 root.removeChild(root.lastChild);
               }
             }
+            // Also hide Decap logo
+            hideDecapLogo();
           }
           removeDuplicates();
           setTimeout(removeDuplicates, 100);
           setTimeout(removeDuplicates, 500);
           setTimeout(removeDuplicates, 1000);
+          
+          // Watch for Decap logo and hide it
+          const logoObserver = new MutationObserver(hideDecapLogo);
+          logoObserver.observe(root, { childList: true, subtree: true, characterData: true });
+          
+          // Run hideDecapLogo multiple times to catch it
+          setTimeout(hideDecapLogo, 100);
+          setTimeout(hideDecapLogo, 500);
+          setTimeout(hideDecapLogo, 1000);
+          setTimeout(hideDecapLogo, 2000);
         }
       }, 300);
     };
