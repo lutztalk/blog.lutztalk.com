@@ -4,7 +4,7 @@ export const SITE = {
   profile: "https://blog.lutztalk.com/",
   desc: "Hi! I'm Austin Lutz. I work in the collaboration and networking world—designing, building, and improving the systems people rely on to communicate. I write about AI, 5G, collaboration platforms, networking, and live broadcasting from the lens of real-world use, experimentation, and lessons learned. You'll find deep dives on collaboration tech, practical takes on AI as a force multiplier, and behind-the-scenes looks at projects I'm actively building. Always learning. Always building.",
   title: "LutzTalk",
-  ogImage: "astropaper-og.jpg",
+  ogImage: "og-black.png",
   lightAndDarkMode: true,
   postPerIndex: 4,
   postPerPage: 4,
