@@ -1,21 +1,19 @@
 import rss from "@astrojs/rss";
-import { getCollection } from "astro:content";
-import { getPath } from "@/utils/getPath";
-import getSortedPosts from "@/utils/getSortedPosts";
+import { getStoryblokPosts, sortStoryblokPosts } from "@/utils/getStoryblokPosts";
 import { SITE } from "@/config";
 
 export async function GET() {
-  const posts = await getCollection("blog");
-  const sortedPosts = getSortedPosts(posts);
+  const posts = await getStoryblokPosts();
+  const sortedPosts = sortStoryblokPosts(posts);
   return rss({
     title: SITE.title,
     description: SITE.desc,
     site: SITE.website,
-    items: sortedPosts.map(({ data, id, filePath }) => ({
-      link: getPath(id, filePath),
-      title: data.title,
-      description: data.description,
-      pubDate: new Date(data.modDatetime ?? data.pubDatetime),
+    items: sortedPosts.map((post) => ({
+      link: `${SITE.website}posts/${post.slug}/`,
+      title: post.data.title,
+      description: post.data.description,
+      pubDate: post.data.pubDatetime,
     })),
   });
 }
