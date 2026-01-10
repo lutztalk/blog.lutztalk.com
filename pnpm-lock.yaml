@@ -16,16 +16,19 @@ importers:
         version: 3.6.0
       '@astrojs/vercel':
         specifier: ^9.0.3
-        version: 9.0.3(astro@5.16.6(@types/node@16.18.11)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.41.1)(terser@5.44.1)(typescript@5.9.3)(yaml@2.7.1))(react@19.2.3)(rollup@4.41.1)
+        version: 9.0.3(astro@5.16.6(@types/node@16.18.11)(@upstash/redis@1.36.1)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.41.1)(terser@5.44.1)(typescript@5.9.3)(yaml@2.7.1))(react@19.2.3)(rollup@4.41.1)
       '@resvg/resvg-js':
         specifier: ^2.6.2
         version: 2.6.2
       '@storyblok/astro':
         specifier: ^7.3.7
-        version: 7.3.7(astro@5.16.6(@types/node@16.18.11)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.41.1)(terser@5.44.1)(typescript@5.9.3)(yaml@2.7.1))
+        version: 7.3.7(astro@5.16.6(@types/node@16.18.11)(@upstash/redis@1.36.1)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.41.1)(terser@5.44.1)(typescript@5.9.3)(yaml@2.7.1))
       '@tailwindcss/vite':
         specifier: ^4.1.18
         version: 4.1.18(vite@6.4.1(@types/node@16.18.11)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(yaml@2.7.1))
+      '@upstash/redis':
+        specifier: ^1.36.1
+        version: 1.36.1
       '@vercel/kv':
         specifier: ^1.0.1
         version: 1.0.1
@@ -34,7 +37,7 @@ importers:
         version: 5.5.16(rollup@4.41.1)
       astro:
         specifier: ^5.16.6
-        version: 5.16.6(@types/node@16.18.11)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.41.1)(terser@5.44.1)(typescript@5.9.3)(yaml@2.7.1)
+        version: 5.16.6(@types/node@16.18.11)(@upstash/redis@1.36.1)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.41.1)(terser@5.44.1)(typescript@5.9.3)(yaml@2.7.1)
       dayjs:
         specifier: ^1.11.19
         version: 1.11.19
@@ -1425,6 +1428,9 @@ packages:
 
   '@upstash/redis@1.25.1':
     resolution: {integrity: sha512-ACj0GhJ4qrQyBshwFgPod6XufVEfKX2wcaihsEvSdLYnY+m+pa13kGt1RXm/yTHKf4TQi/Dy2A8z/y6WUEOmlg==}
+
+  '@upstash/redis@1.36.1':
+    resolution: {integrity: sha512-N6SjDcgXdOcTAF+7uNoY69o7hCspe9BcA7YjQdxVu5d25avljTwyLaHBW3krWjrP0FfocgMk94qyVtQbeDp39A==}
 
   '@vercel/analytics@1.6.1':
     resolution: {integrity: sha512-oH9He/bEM+6oKlv3chWuOOcp8Y6fo6/PSro8hEkgCW3pu9/OiCXiUpRUogDh3Fs3LH2sosDrx8CxeOLBEE+afg==}
@@ -4127,14 +4133,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@astrojs/vercel@9.0.3(astro@5.16.6(@types/node@16.18.11)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.41.1)(terser@5.44.1)(typescript@5.9.3)(yaml@2.7.1))(react@19.2.3)(rollup@4.41.1)':
+  '@astrojs/vercel@9.0.3(astro@5.16.6(@types/node@16.18.11)(@upstash/redis@1.36.1)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.41.1)(terser@5.44.1)(typescript@5.9.3)(yaml@2.7.1))(react@19.2.3)(rollup@4.41.1)':
     dependencies:
       '@astrojs/internal-helpers': 0.7.5
       '@vercel/analytics': 1.6.1(react@19.2.3)
       '@vercel/functions': 2.2.13
       '@vercel/nft': 0.30.4(rollup@4.41.1)
       '@vercel/routing-utils': 5.3.1
-      astro: 5.16.6(@types/node@16.18.11)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.41.1)(terser@5.44.1)(typescript@5.9.3)(yaml@2.7.1)
+      astro: 5.16.6(@types/node@16.18.11)(@upstash/redis@1.36.1)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.41.1)(terser@5.44.1)(typescript@5.9.3)(yaml@2.7.1)
       esbuild: 0.25.0
       tinyglobby: 0.2.15
     transitivePeerDependencies:
@@ -5010,10 +5016,10 @@ snapshots:
       fflate: 0.7.4
       string.prototype.codepointat: 0.2.1
 
-  '@storyblok/astro@7.3.7(astro@5.16.6(@types/node@16.18.11)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.41.1)(terser@5.44.1)(typescript@5.9.3)(yaml@2.7.1))':
+  '@storyblok/astro@7.3.7(astro@5.16.6(@types/node@16.18.11)(@upstash/redis@1.36.1)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.41.1)(terser@5.44.1)(typescript@5.9.3)(yaml@2.7.1))':
     dependencies:
       '@storyblok/js': 4.4.3
-      astro: 5.16.6(@types/node@16.18.11)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.41.1)(terser@5.44.1)(typescript@5.9.3)(yaml@2.7.1)
+      astro: 5.16.6(@types/node@16.18.11)(@upstash/redis@1.36.1)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.41.1)(terser@5.44.1)(typescript@5.9.3)(yaml@2.7.1)
       camelcase: 8.0.0
 
   '@storyblok/js@4.4.3':
@@ -5293,6 +5299,10 @@ snapshots:
     dependencies:
       crypto-js: 4.2.0
 
+  '@upstash/redis@1.36.1':
+    dependencies:
+      uncrypto: 0.1.3
+
   '@vercel/analytics@1.6.1(react@19.2.3)':
     optionalDependencies:
       react: 19.2.3
@@ -5536,7 +5546,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  astro@5.16.6(@types/node@16.18.11)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.41.1)(terser@5.44.1)(typescript@5.9.3)(yaml@2.7.1):
+  astro@5.16.6(@types/node@16.18.11)(@upstash/redis@1.36.1)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.41.1)(terser@5.44.1)(typescript@5.9.3)(yaml@2.7.1):
     dependencies:
       '@astrojs/compiler': 2.13.0
       '@astrojs/internal-helpers': 0.7.5
@@ -5591,7 +5601,7 @@ snapshots:
       ultrahtml: 1.6.0
       unifont: 0.6.0
       unist-util-visit: 5.0.0
-      unstorage: 1.17.3(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)
+      unstorage: 1.17.3(@upstash/redis@1.36.1)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1)
       vfile: 6.0.3
       vite: 6.4.1(@types/node@16.18.11)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(yaml@2.7.1)
       vitefu: 1.1.1(vite@6.4.1(@types/node@16.18.11)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(yaml@2.7.1))
@@ -7921,7 +7931,7 @@ snapshots:
 
   universal-user-agent@7.0.3: {}
 
-  unstorage@1.17.3(@vercel/functions@2.2.13)(@vercel/kv@1.0.1):
+  unstorage@1.17.3(@upstash/redis@1.36.1)(@vercel/functions@2.2.13)(@vercel/kv@1.0.1):
     dependencies:
       anymatch: 3.1.3
       chokidar: 4.0.3
@@ -7932,6 +7942,7 @@ snapshots:
       ofetch: 1.5.1
       ufo: 1.6.1
     optionalDependencies:
+      '@upstash/redis': 1.36.1
       '@vercel/functions': 2.2.13
       '@vercel/kv': 1.0.1
 

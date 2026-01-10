@@ -1,5 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
+
+// Initialize Redis from environment variables
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL!,
+  token: process.env.KV_REST_API_TOKEN!,
+});
 
 export default async function handler(
   req: VercelRequest,
@@ -24,24 +30,22 @@ export default async function handler(
 
   try {
     if (req.method === 'GET') {
-      const count = await kv.get<number>(key) || 0;
+      const count = await redis.get<number>(key) || 0;
       res.setHeader('Cache-Control', 'public, max-age=30');
       return res.status(200).json({ count });
     }
 
     if (req.method === 'POST') {
       // Atomically increment the count
-      const count = await kv.incr(key);
+      const count = await redis.incr(key);
       return res.status(200).json({ count });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
-    console.error('KV error:', error);
-    // If KV is not configured, return an error
-    // User needs to set up Vercel KV in their project settings
+    console.error('Redis error:', error);
     return res.status(500).json({ 
-      error: 'KV not configured. Please set up Vercel KV in your project settings.',
+      error: 'Redis error',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
