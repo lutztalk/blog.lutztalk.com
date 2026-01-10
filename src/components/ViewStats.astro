@@ -55,11 +55,20 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
         'X-Viewer-ID': viewerId,
       },
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          return res.json().then(err => {
+            console.error('[ViewStats] POST error:', err);
+            throw new Error(`HTTP error! status: ${res.status}, ${JSON.stringify(err)}`);
+          });
+        }
+        return res.json();
+      })
       .then(data => {
+        console.log('[ViewStats] POST response:', data);
         // Update view count immediately after tracking
         if (data.count !== undefined && viewCountEl) {
-          const count = data.count;
+          const count = Number(data.count);
           if (count > 0) {
             viewCountEl.textContent = count === 1 
               ? '1 person has read this' 
@@ -80,13 +89,17 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
       fetch(new URL(`/api/views/${slug}`, window.location.origin))
         .then(res => {
           if (!res.ok) {
-            throw new Error(`HTTP error! status: ${res.status}`);
+            return res.json().then(err => {
+              console.error('[ViewStats] API error:', err);
+              throw new Error(`HTTP error! status: ${res.status}, ${JSON.stringify(err)}`);
+            });
           }
           return res.json();
         })
         .then(data => {
+          console.log('[ViewStats] Received count data:', data);
           if (data.count !== undefined) {
-            const count = data.count;
+            const count = Number(data.count);
             if (viewCountEl) {
               if (count > 0) {
                 viewCountEl.textContent = count === 1 
@@ -98,9 +111,12 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
                 if (viewCountSeparatorEl) viewCountSeparatorEl.classList.add('hidden');
               }
             }
-          } else if (viewCountEl) {
-            viewCountEl.textContent = '';
-            if (viewCountSeparatorEl) viewCountSeparatorEl.classList.add('hidden');
+          } else {
+            console.warn('[ViewStats] No count in response:', data);
+            if (viewCountEl) {
+              viewCountEl.textContent = '';
+              if (viewCountSeparatorEl) viewCountSeparatorEl.classList.add('hidden');
+            }
           }
         })
         .catch((error) => {
