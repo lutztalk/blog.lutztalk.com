@@ -5,6 +5,7 @@ import Footer from "@/components/Footer.astro";
 import Tag from "@/components/Tag.astro";
 import Datetime from "@/components/Datetime.astro";
 import StoryblokReadingTime from "@/components/StoryblokReadingTime.astro";
+import ViewStats from "@/components/ViewStats.astro";
 import ShareLinks from "@/components/ShareLinks.astro";
 import BackButton from "@/components/BackButton.astro";
 import BackToTopButton from "@/components/BackToTopButton.astro";
@@ -78,6 +79,8 @@ const nextPost =
       <Datetime pubDatetime={pubDatetime} modDatetime={modDatetime} size="lg" />
       <span aria-hidden="true" class="opacity-60">•</span>
       <StoryblokReadingTime post={post} size="lg" />
+      <span aria-hidden="true" class="opacity-60">•</span>
+      <ViewStats slug={post.slug} size="lg" />
     </div>
     <article
       id="article"
