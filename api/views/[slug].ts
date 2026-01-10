@@ -3,8 +3,8 @@ import { Redis } from '@upstash/redis';
 
 // Initialize Redis from environment variables
 function getRedis() {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
+  const url = process.env.KV_REST_API_URL?.trim();
+  const token = process.env.KV_REST_API_TOKEN?.trim();
 
   if (!url || !token) {
     throw new Error('Redis environment variables not set. KV_REST_API_URL and KV_REST_API_TOKEN are required.');
