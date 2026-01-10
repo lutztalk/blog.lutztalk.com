@@ -63,8 +63,8 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
             const otherCount = count - 1; // Exclude current viewer
             if (otherCount > 0) {
               viewCountEl.textContent = otherCount === 1 
-                ? '1 other person has read this' 
-                : `${otherCount.toLocaleString()} other people have read this`;
+                ? '1 person has read this' 
+                : `${otherCount.toLocaleString()} people have read this`;
             } else {
               viewCountEl.textContent = '';
             }
@@ -92,8 +92,8 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
             if (viewCountEl) {
               if (otherCount > 0) {
                 viewCountEl.textContent = otherCount === 1 
-                  ? '1 other person has read this' 
-                  : `${otherCount.toLocaleString()} other people have read this`;
+                  ? '1 person has read this' 
+                  : `${otherCount.toLocaleString()} people have read this`;
               } else {
                 // Don't show if no other people have read it
                 viewCountEl.textContent = '';
@@ -130,7 +130,10 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
           if (data.count !== undefined && viewersCountEl) {
             const count = data.count;
             if (count > 1) {
-              viewersCountEl.textContent = `${count - 1} other${count - 1 === 1 ? '' : 's'} viewing`;
+              const viewerCount = count - 1;
+              viewersCountEl.textContent = viewerCount === 1 
+                ? '1 viewing' 
+                : `${viewerCount} viewing`;
               viewersCountEl.classList.remove('hidden');
               if (viewersSeparatorEl) viewersSeparatorEl.classList.remove('hidden');
             } else {
