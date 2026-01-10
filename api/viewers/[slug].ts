@@ -1,62 +1,80 @@
-export const config = {
-  runtime: 'edge',
-};
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Using Vercel KV for persistent storage
+interface Viewer {
+  id: string;
+  lastSeen: number;
+}
+
+// In-memory store for active viewers (persists within the same serverless function instance)
+// Note: Data resets on cold starts. For production persistence, use Vercel KV.
+const activeViewers = new Map<string, Map<string, Viewer>>();
 const VIEWER_TIMEOUT = 30000; // 30 seconds
 
-export default async function handler(req: Request) {
-  const url = new URL(req.url);
-  const slug = url.pathname.split('/').pop();
-
-  if (!slug) {
-    return new Response(JSON.stringify({ error: 'Slug required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
+// Clean up old viewers
+function cleanupViewers() {
+  const now = Date.now();
+  activeViewers.forEach((viewers, slug) => {
+    viewers.forEach((viewer, id) => {
+      if (now - viewer.lastSeen > VIEWER_TIMEOUT) {
+        viewers.delete(id);
+      }
     });
+    if (viewers.size === 0) {
+      activeViewers.delete(slug);
+    }
+  });
+}
+
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Viewer-ID');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
-  const viewerId = req.headers.get('x-viewer-id') || 
-    `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  const slug = req.query.slug as string;
+  
+  if (!slug) {
+    return res.status(400).json({ error: 'Slug required' });
+  }
 
   if (req.method === 'GET') {
-    // Get active viewers count
-    // With KV: 
-    //   const viewers = await kv.zrange(`viewers:${slug}`, 0, -1, { withScores: true });
-    //   const now = Date.now();
-    //   const active = viewers.filter(([_, timestamp]) => now - timestamp < VIEWER_TIMEOUT);
-    //   return new Response(JSON.stringify({ count: active.length }), {
-    //     headers: { 'Content-Type': 'application/json' },
-    //   });
-    return new Response(JSON.stringify({ count: 0 }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    cleanupViewers();
+    const viewers = activeViewers.get(slug) || new Map();
+    const count = viewers.size;
+    res.setHeader('Cache-Control', 'no-cache');
+    return res.status(200).json({ count });
   }
 
   if (req.method === 'POST') {
-    // Update viewer activity
+    const viewerId = (req.headers['x-viewer-id'] as string) || 
+      `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+    if (!activeViewers.has(slug)) {
+      activeViewers.set(slug, new Map());
+    }
+
+    const viewers = activeViewers.get(slug)!;
     const now = Date.now();
     
-    // With KV:
-    //   await kv.zadd(`viewers:${slug}`, now, viewerId);
-    //   await kv.expire(`viewers:${slug}`, 60); // Clean up after 60 seconds
-    //   
-    //   // Get active viewers
-    //   const viewers = await kv.zrange(`viewers:${slug}`, 0, -1, { withScores: true });
-    //   const active = viewers.filter(([_, timestamp]) => now - timestamp < VIEWER_TIMEOUT);
-    //   
-    //   return new Response(JSON.stringify({ count: active.length, viewerId }), {
-    //     headers: { 'Content-Type': 'application/json', 'X-Viewer-ID': viewerId },
-    //   });
-
-    return new Response(JSON.stringify({ count: 1, viewerId }), {
-      headers: { 'Content-Type': 'application/json', 'X-Viewer-ID': viewerId },
+    viewers.set(viewerId, {
+      id: viewerId,
+      lastSeen: now,
     });
+
+    cleanupViewers();
+
+    const count = viewers.size;
+    res.setHeader('X-Viewer-ID', viewerId);
+    return res.status(200).json({ count, viewerId });
   }
 
-  return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-    status: 405,
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return res.status(405).json({ error: 'Method not allowed' });
 }
 

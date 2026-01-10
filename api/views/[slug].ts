@@ -1,48 +1,40 @@
-export const config = {
-  runtime: 'edge',
-};
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Using Vercel KV for persistent storage
-// Make sure to set up KV in your Vercel dashboard and install @vercel/kv
-export default async function handler(req: Request) {
-  const url = new URL(req.url);
-  const slug = url.pathname.split('/').pop();
+// In-memory store (persists within the same serverless function instance)
+// Note: Counts reset on cold starts. For production persistence, use Vercel KV.
+const viewCounts = new Map<string, number>();
 
-  if (!slug) {
-    return new Response(JSON.stringify({ error: 'Slug required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Viewer-ID');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
-  // For now, use a simple in-memory approach
-  // In production, use Vercel KV:
-  // import { kv } from '@vercel/kv';
+  const slug = req.query.slug as string;
   
+  if (!slug) {
+    return res.status(400).json({ error: 'Slug required' });
+  }
+
   if (req.method === 'GET') {
-    // Get view count
-    // With KV: const count = await kv.get(`views:${slug}`) || 0;
-    const count = 0; // Placeholder - will be replaced with KV
-    return new Response(JSON.stringify({ count }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const count = viewCounts.get(slug) || 0;
+    res.setHeader('Cache-Control', 'public, max-age=30');
+    return res.status(200).json({ count });
   }
 
   if (req.method === 'POST') {
-    // Increment view count
-    // With KV: 
-    //   const count = await kv.incr(`views:${slug}`);
-    //   return new Response(JSON.stringify({ count }), {
-    //     headers: { 'Content-Type': 'application/json' },
-    //   });
-    return new Response(JSON.stringify({ count: 0 }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const current = viewCounts.get(slug) || 0;
+    viewCounts.set(slug, current + 1);
+    return res.status(200).json({ count: current + 1 });
   }
 
-  return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-    status: 405,
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return res.status(405).json({ error: 'Method not allowed' });
 }
 
