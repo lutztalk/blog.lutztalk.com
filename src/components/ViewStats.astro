@@ -13,8 +13,9 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
   data-view-stats
   data-slug={slug}
 >
-  <span id="view-count-{slug}" class="view-count"></span>
-  <span id="viewers-count-{slug}" class="viewers-count hidden"></span>
+  <span id={`view-count-${slug}`} class="view-count"></span>
+  <span aria-hidden="true" class="opacity-60 mx-1 hidden viewers-separator">•</span>
+  <span id={`viewers-count-${slug}`} class="viewers-count hidden"></span>
 </div>
 
 <script define:vars={{ postSlug: slug }}>
@@ -25,6 +26,7 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
 
     const viewCountEl = container.querySelector(`#view-count-${slug}`);
     const viewersCountEl = container.querySelector(`#viewers-count-${slug}`);
+    const viewersSeparatorEl = container.querySelector(`.viewers-separator`);
     if (!viewCountEl || !viewersCountEl) return;
 
     // Generate or get viewer ID
@@ -52,7 +54,12 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
     // Update view count
     function updateViewCount() {
       fetch(new URL(`/api/views/${slug}`, window.location.origin))
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+          return res.json();
+        })
         .then(data => {
           if (data.count !== undefined && data.count > 0) {
             const count = data.count;
@@ -63,7 +70,8 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
             viewCountEl.textContent = '';
           }
         })
-        .catch(() => {
+        .catch((error) => {
+          console.error('Error fetching view count:', error);
           if (viewCountEl) {
             viewCountEl.textContent = '';
           }
@@ -79,21 +87,32 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
           'X-Viewer-ID': viewerId,
         },
       })
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+          return res.json();
+        })
         .then(data => {
           if (data.count !== undefined && viewersCountEl) {
             const count = data.count;
             if (count > 1) {
               viewersCountEl.textContent = `${count - 1} other${count - 1 === 1 ? '' : 's'} viewing`;
               viewersCountEl.classList.remove('hidden');
+              if (viewersSeparatorEl) viewersSeparatorEl.classList.remove('hidden');
             } else {
               viewersCountEl.classList.add('hidden');
+              if (viewersSeparatorEl) viewersSeparatorEl.classList.add('hidden');
             }
           }
         })
-        .catch(() => {
+        .catch((error) => {
+          console.error('Error fetching active viewers:', error);
           if (viewersCountEl) {
             viewersCountEl.classList.add('hidden');
+          }
+          if (viewersSeparatorEl) {
+            viewersSeparatorEl.classList.add('hidden');
           }
         });
     }
