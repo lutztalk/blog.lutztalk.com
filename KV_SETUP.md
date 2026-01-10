@@ -11,8 +11,8 @@ The view stats feature requires Vercel KV for persistent storage. Without it, vi
    - Alternatively, go directly to: https://vercel.com/marketplace
 
 2. **Create a Vercel KV Database:**
-   - Search for "KV" or "Upstash" (Vercel KV is powered by Upstash)
-   - Click on the KV/Upstash option
+   - Search for "Upstash" in the marketplace
+   - **Select "Upstash for Redis"** (this is the correct option - Vercel KV uses Upstash Redis)
    - Click "Add Integration" or "Create Database"
    - Choose a name (e.g., "blog-views")
    - Select a region (choose the closest to your users)
