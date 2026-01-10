@@ -18,16 +18,22 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
   <span id={`viewers-count-${slug}`} class="viewers-count hidden"></span>
 </div>
 
-<script define:vars={{ postSlug: slug }}>
-  (function() {
+<script define:vars={{ postSlug: slug }} is:inline>
+  function initViewStats() {
     const slug = postSlug;
     const container = document.querySelector(`[data-view-stats][data-slug="${slug}"]`);
-    if (!container) return;
+    if (!container) {
+      console.warn('[ViewStats] Container not found for slug:', slug);
+      return;
+    }
 
     const viewCountEl = container.querySelector(`#view-count-${slug}`);
     const viewersCountEl = container.querySelector(`#viewers-count-${slug}`);
     const viewersSeparatorEl = container.querySelector(`.viewers-separator`);
-    if (!viewCountEl || !viewersCountEl) return;
+    if (!viewCountEl || !viewersCountEl) {
+      console.warn('[ViewStats] Elements not found for slug:', slug);
+      return;
+    }
 
     // Generate or get viewer ID
     let viewerId = sessionStorage.getItem('viewer-id');
@@ -35,6 +41,9 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
       viewerId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
       sessionStorage.setItem('viewer-id', viewerId);
     }
+
+    let viewersInterval = null;
+    let viewInterval = null;
 
     // Track view (only once per session)
     const viewTracked = sessionStorage.getItem(`view-tracked-${slug}`);
@@ -45,8 +54,8 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
           'Content-Type': 'application/json',
           'X-Viewer-ID': viewerId,
         },
-      }).catch(() => {
-        // Silently fail if API is unavailable
+      }).catch((error) => {
+        console.error('[ViewStats] Error tracking view:', error);
       });
       sessionStorage.setItem(`view-tracked-${slug}`, 'true');
     }
@@ -71,7 +80,7 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
           }
         })
         .catch((error) => {
-          console.error('Error fetching view count:', error);
+          console.error('[ViewStats] Error fetching view count:', error);
           if (viewCountEl) {
             viewCountEl.textContent = '';
           }
@@ -107,7 +116,7 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
           }
         })
         .catch((error) => {
-          console.error('Error fetching active viewers:', error);
+          console.error('[ViewStats] Error fetching active viewers:', error);
           if (viewersCountEl) {
             viewersCountEl.classList.add('hidden');
           }
@@ -117,21 +126,39 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
         });
     }
 
+    // Clean up existing intervals
+    if (viewersInterval) clearInterval(viewersInterval);
+    if (viewInterval) clearInterval(viewInterval);
+
     // Initial load
     updateViewCount();
     updateViewers();
 
     // Update viewers every 10 seconds
-    const viewersInterval = setInterval(updateViewers, 10000);
+    viewersInterval = setInterval(updateViewers, 10000);
 
     // Update view count every 30 seconds
-    const viewInterval = setInterval(updateViewCount, 30000);
+    viewInterval = setInterval(updateViewCount, 30000);
 
     // Clean up on page unload
-    window.addEventListener('beforeunload', () => {
-      clearInterval(viewersInterval);
-      clearInterval(viewInterval);
-    });
-  })();
+    const cleanup = () => {
+      if (viewersInterval) clearInterval(viewersInterval);
+      if (viewInterval) clearInterval(viewInterval);
+    };
+    window.addEventListener('beforeunload', cleanup);
+    
+    // Return cleanup function for Astro view transitions
+    return cleanup;
+  }
+
+  // Run on initial load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initViewStats);
+  } else {
+    initViewStats();
+  }
+
+  // Run on Astro view transitions
+  document.addEventListener('astro:page-load', initViewStats);
 </script>
 
