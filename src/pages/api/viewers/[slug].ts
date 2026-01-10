@@ -1,5 +1,8 @@
 import type { APIRoute } from "astro";
 
+// This route should be server-rendered, not statically generated
+export const prerender = false;
+
 // Track active viewers (last seen within 30 seconds)
 interface Viewer {
   id: string;

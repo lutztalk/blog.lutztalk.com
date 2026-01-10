@@ -1,5 +1,8 @@
 import type { APIRoute } from "astro";
 
+// This route should be server-rendered, not statically generated
+export const prerender = false;
+
 // Simple in-memory store (resets on deploy)
 // For production persistence, consider using Vercel KV, Upstash, or a database
 const viewCounts = new Map<string, number>();
@@ -22,7 +25,7 @@ export const GET: APIRoute = async ({ params }) => {
   });
 };
 
-export const POST: APIRoute = async ({ params, request }) => {
+export const POST: APIRoute = async ({ params }) => {
   const slug = params.slug;
   if (!slug) {
     return new Response(JSON.stringify({ error: "Slug required" }), {
