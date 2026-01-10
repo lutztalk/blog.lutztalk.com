@@ -47,38 +47,33 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
     let viewersInterval = null;
     let viewInterval = null;
 
-    // Track view (only once per session)
-    const viewTracked = sessionStorage.getItem(`view-tracked-${slug}`);
-    if (!viewTracked) {
-      fetch(new URL(`/api/views/${slug}`, window.location.origin), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Viewer-ID': viewerId,
-        },
-      })
-        .then(res => res.json())
-        .then(data => {
-          // Update view count immediately after tracking
-          if (data.count !== undefined && viewCountEl) {
-            const count = data.count;
-            const otherCount = count - 1; // Exclude current viewer
-            if (otherCount > 0) {
-              viewCountEl.textContent = otherCount === 1 
-                ? '1 person has read this' 
-                : `${otherCount.toLocaleString()} people have read this`;
-              if (viewCountSeparatorEl) viewCountSeparatorEl.classList.remove('hidden');
-            } else {
-              viewCountEl.textContent = '';
-              if (viewCountSeparatorEl) viewCountSeparatorEl.classList.add('hidden');
-            }
+    // Track view (every navigation/click to the article)
+    fetch(new URL(`/api/views/${slug}`, window.location.origin), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Viewer-ID': viewerId,
+      },
+    })
+      .then(res => res.json())
+      .then(data => {
+        // Update view count immediately after tracking
+        if (data.count !== undefined && viewCountEl) {
+          const count = data.count;
+          if (count > 0) {
+            viewCountEl.textContent = count === 1 
+              ? '1 person has read this' 
+              : `${count.toLocaleString()} people have read this`;
+            if (viewCountSeparatorEl) viewCountSeparatorEl.classList.remove('hidden');
+          } else {
+            viewCountEl.textContent = '';
+            if (viewCountSeparatorEl) viewCountSeparatorEl.classList.add('hidden');
           }
-        })
-        .catch((error) => {
-          console.error('[ViewStats] Error tracking view:', error);
-        });
-      sessionStorage.setItem(`view-tracked-${slug}`, 'true');
-    }
+        }
+      })
+      .catch((error) => {
+        console.error('[ViewStats] Error tracking view:', error);
+      });
 
     // Update view count
     function updateViewCount() {
@@ -92,15 +87,13 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
         .then(data => {
           if (data.count !== undefined) {
             const count = data.count;
-            const otherCount = count - 1; // Exclude current viewer
             if (viewCountEl) {
-              if (otherCount > 0) {
-                viewCountEl.textContent = otherCount === 1 
+              if (count > 0) {
+                viewCountEl.textContent = count === 1 
                   ? '1 person has read this' 
-                  : `${otherCount.toLocaleString()} people have read this`;
+                  : `${count.toLocaleString()} people have read this`;
                 if (viewCountSeparatorEl) viewCountSeparatorEl.classList.remove('hidden');
               } else {
-                // Don't show if no other people have read it
                 viewCountEl.textContent = '';
                 if (viewCountSeparatorEl) viewCountSeparatorEl.classList.add('hidden');
               }
