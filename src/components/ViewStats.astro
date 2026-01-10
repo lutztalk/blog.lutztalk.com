@@ -20,83 +20,21 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
 </div>
 
 <script define:vars={{ postSlug: slug }} is:inline>
-  // Track if view has been counted for this page load to prevent double counting
-  const viewTrackingKey = `view-tracked-${postSlug}-${window.location.pathname}`;
-  let viewTracked = false;
-  let viewersInterval = null;
-  let viewInterval = null;
-
-  function initViewStats() {
+  (function() {
     const slug = postSlug;
-    const container = document.querySelector(`[data-view-stats][data-slug="${slug}"]`);
-    if (!container) {
-      console.warn('[ViewStats] Container not found for slug:', slug);
-      return;
-    }
-
-    const viewCountEl = container.querySelector(`#view-count-${slug}`);
-    const viewersCountEl = container.querySelector(`#viewers-count-${slug}`);
-    const viewCountSeparatorEl = container.querySelector(`.view-count-separator`);
-    const viewersSeparatorEl = container.querySelector(`.viewers-separator`);
-    if (!viewCountEl || !viewersCountEl) {
-      console.warn('[ViewStats] Elements not found for slug:', slug);
-      return;
-    }
-
-    // Generate or get viewer ID
-    let viewerId = sessionStorage.getItem('viewer-id');
-    if (!viewerId) {
-      viewerId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      sessionStorage.setItem('viewer-id', viewerId);
-    }
-
-    // Clean up existing intervals
-    if (viewersInterval) clearInterval(viewersInterval);
-    if (viewInterval) clearInterval(viewInterval);
-
-    // Track view (only once per page load)
-    if (!viewTracked) {
-      viewTracked = true;
-      fetch(new URL(`/api/views/${slug}`, window.location.origin), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Viewer-ID': viewerId,
-        },
-      })
-      .then(res => {
-        if (!res.ok) {
-          return res.json().then(err => {
-            console.error('[ViewStats] POST error:', err);
-            throw new Error(`HTTP error! status: ${res.status}, ${JSON.stringify(err)}`);
-          });
-        }
-        return res.json();
-      })
-      .then(data => {
-        console.log('[ViewStats] POST response:', data);
-        // Update view count immediately after tracking
-        if (data.count !== undefined && viewCountEl) {
-          const count = Number(data.count);
-          if (count > 0) {
-            viewCountEl.textContent = count === 1 
-              ? '1 person has read this' 
-              : `${count.toLocaleString()} people have read this`;
-            if (viewCountSeparatorEl) viewCountSeparatorEl.classList.remove('hidden');
-          } else {
-            viewCountEl.textContent = '';
-            if (viewCountSeparatorEl) viewCountSeparatorEl.classList.add('hidden');
-          }
-        }
-      })
-      .catch((error) => {
-        console.error('[ViewStats] Error tracking view:', error);
-        viewTracked = false; // Reset on error so we can retry
-      });
-    }
+    let viewersInterval = null;
+    let viewInterval = null;
+    let isInitialized = false;
+    let viewCountEl = null;
+    let viewersCountEl = null;
+    let viewCountSeparatorEl = null;
+    let viewersSeparatorEl = null;
+    let viewerId = null;
 
     // Update view count
     function updateViewCount() {
+      if (!viewCountEl) return;
+      
       fetch(new URL(`/api/views/${slug}`, window.location.origin))
         .then(res => {
           if (!res.ok) {
@@ -109,22 +47,14 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
         })
         .then(data => {
           console.log('[ViewStats] Received count data:', data);
-          if (data.count !== undefined) {
+          if (data.count !== undefined && viewCountEl) {
             const count = Number(data.count);
-            if (viewCountEl) {
-              if (count > 0) {
-                viewCountEl.textContent = count === 1 
-                  ? '1 person has read this' 
-                  : `${count.toLocaleString()} people have read this`;
-                if (viewCountSeparatorEl) viewCountSeparatorEl.classList.remove('hidden');
-              } else {
-                viewCountEl.textContent = '';
-                if (viewCountSeparatorEl) viewCountSeparatorEl.classList.add('hidden');
-              }
-            }
-          } else {
-            console.warn('[ViewStats] No count in response:', data);
-            if (viewCountEl) {
+            if (count > 0) {
+              viewCountEl.textContent = count === 1 
+                ? '1 person has read this' 
+                : `${count.toLocaleString()} people have read this`;
+              if (viewCountSeparatorEl) viewCountSeparatorEl.classList.remove('hidden');
+            } else {
               viewCountEl.textContent = '';
               if (viewCountSeparatorEl) viewCountSeparatorEl.classList.add('hidden');
             }
@@ -141,6 +71,8 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
 
     // Update active viewers
     function updateViewers() {
+      if (!viewersCountEl || !viewerId) return;
+      
       fetch(new URL(`/api/viewers/${slug}`, window.location.origin), {
         method: 'POST',
         headers: {
@@ -155,13 +87,16 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
           return res.json();
         })
         .then(data => {
+          console.log('[ViewStats] Active viewers response:', data);
           if (data.count !== undefined && viewersCountEl) {
-            const count = data.count;
-            if (count > 1) {
-              const viewerCount = count - 1;
-              viewersCountEl.textContent = viewerCount === 1 
+            const totalCount = Number(data.count);
+            // Count includes current viewer, so subtract 1 to get "others"
+            const othersCount = totalCount > 0 ? totalCount - 1 : 0;
+            
+            if (othersCount > 0) {
+              viewersCountEl.textContent = othersCount === 1 
                 ? '1 viewing' 
-                : `${viewerCount} viewing`;
+                : `${othersCount} viewing`;
               viewersCountEl.classList.remove('hidden');
               if (viewersSeparatorEl) viewersSeparatorEl.classList.remove('hidden');
             } else {
@@ -181,38 +116,130 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
         });
     }
 
-    // Initial load
-    updateViewCount();
-    updateViewers();
+    function initViewStats() {
+      // Prevent multiple initializations
+      if (isInitialized) {
+        console.log('[ViewStats] Already initialized, skipping');
+        return;
+      }
 
-    // Update viewers every 10 seconds
-    viewersInterval = setInterval(updateViewers, 10000);
+      const container = document.querySelector(`[data-view-stats][data-slug="${slug}"]`);
+      if (!container) {
+        console.warn('[ViewStats] Container not found for slug:', slug);
+        return;
+      }
 
-    // Update view count every 30 seconds
-    viewInterval = setInterval(updateViewCount, 30000);
+      viewCountEl = container.querySelector(`#view-count-${slug}`);
+      viewersCountEl = container.querySelector(`#viewers-count-${slug}`);
+      viewCountSeparatorEl = container.querySelector(`.view-count-separator`);
+      viewersSeparatorEl = container.querySelector(`.viewers-separator`);
+      if (!viewCountEl || !viewersCountEl) {
+        console.warn('[ViewStats] Elements not found for slug:', slug);
+        return;
+      }
 
-    // Clean up on page unload
-    const cleanup = () => {
+      // Generate or get viewer ID
+      viewerId = sessionStorage.getItem('viewer-id');
+      if (!viewerId) {
+        viewerId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        sessionStorage.setItem('viewer-id', viewerId);
+      }
+
+      // Track if view has been counted for this specific page load using sessionStorage
+      const viewTrackingKey = `view-tracked-${slug}-${window.location.pathname}`;
+      const viewTracked = sessionStorage.getItem(viewTrackingKey);
+
+      // Clean up existing intervals
       if (viewersInterval) clearInterval(viewersInterval);
       if (viewInterval) clearInterval(viewInterval);
-    };
-    window.addEventListener('beforeunload', cleanup);
-    
-    // Return cleanup function for Astro view transitions
-    return cleanup;
-  }
 
-  // Run on initial load
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initViewStats);
-  } else {
-    initViewStats();
-  }
+      // Track view (only once per page load, using sessionStorage for persistence)
+      if (!viewTracked) {
+        sessionStorage.setItem(viewTrackingKey, 'true');
+        console.log('[ViewStats] Tracking view for slug:', slug);
+        fetch(new URL(`/api/views/${slug}`, window.location.origin), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Viewer-ID': viewerId,
+          },
+        })
+        .then(res => {
+          if (!res.ok) {
+            sessionStorage.removeItem(viewTrackingKey); // Remove on error so we can retry
+            return res.json().then(err => {
+              console.error('[ViewStats] POST error:', err);
+              throw new Error(`HTTP error! status: ${res.status}, ${JSON.stringify(err)}`);
+            });
+          }
+          return res.json();
+        })
+        .then(data => {
+          console.log('[ViewStats] POST response:', data);
+          // Update view count immediately after tracking
+          if (data.count !== undefined && viewCountEl) {
+            const count = Number(data.count);
+            if (count > 0) {
+              viewCountEl.textContent = count === 1 
+                ? '1 person has read this' 
+                : `${count.toLocaleString()} people have read this`;
+              if (viewCountSeparatorEl) viewCountSeparatorEl.classList.remove('hidden');
+            } else {
+              viewCountEl.textContent = '';
+              if (viewCountSeparatorEl) viewCountSeparatorEl.classList.add('hidden');
+            }
+          }
+        })
+        .catch((error) => {
+          console.error('[ViewStats] Error tracking view:', error);
+        });
+      } else {
+        console.log('[ViewStats] View already tracked for this page load');
+        // Still update the display even if already tracked
+        updateViewCount();
+      }
 
-  // Run on Astro view transitions (reset tracking flag for new page)
-  document.addEventListener('astro:page-load', () => {
-    viewTracked = false; // Reset for new page
-    initViewStats();
-  });
+      // Mark as initialized
+      isInitialized = true;
+
+      // Initial load
+      updateViewCount();
+      updateViewers();
+
+      // Update viewers every 10 seconds
+      viewersInterval = setInterval(updateViewers, 10000);
+
+      // Update view count every 30 seconds
+      viewInterval = setInterval(updateViewCount, 30000);
+
+      // Clean up on page unload
+      const cleanup = () => {
+        if (viewersInterval) clearInterval(viewersInterval);
+        if (viewInterval) clearInterval(viewInterval);
+      };
+      window.addEventListener('beforeunload', cleanup);
+    }
+
+    // Run on initial load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initViewStats);
+    } else {
+      initViewStats();
+    }
+
+    // Run on Astro view transitions (reset for new page)
+    document.addEventListener('astro:page-load', () => {
+      // Clear the tracking flag for the new page
+      const oldTrackingKey = `view-tracked-${slug}-${window.location.pathname}`;
+      sessionStorage.removeItem(oldTrackingKey);
+      isInitialized = false;
+      // Reset element references
+      viewCountEl = null;
+      viewersCountEl = null;
+      viewCountSeparatorEl = null;
+      viewersSeparatorEl = null;
+      initViewStats();
+    });
+  })();
 </script>
 

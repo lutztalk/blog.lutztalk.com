@@ -56,6 +56,9 @@ export default async function handler(
     const viewerId = (req.headers['x-viewer-id'] as string) || 
       `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
+    // Clean up old viewers first
+    cleanupViewers();
+
     if (!activeViewers.has(slug)) {
       activeViewers.set(slug, new Map());
     }
@@ -63,14 +66,21 @@ export default async function handler(
     const viewers = activeViewers.get(slug)!;
     const now = Date.now();
     
+    // Update or add viewer
     viewers.set(viewerId, {
       id: viewerId,
       lastSeen: now,
     });
 
+    // Clean up again after adding (in case we added a stale one)
     cleanupViewers();
 
-    const count = viewers.size;
+    // Get the final count after cleanup
+    const finalViewers = activeViewers.get(slug) || new Map();
+    const count = finalViewers.size;
+    
+    console.log(`[Viewers API] POST ${slug}: viewerId=${viewerId}, totalCount=${count}`);
+    
     res.setHeader('X-Viewer-ID', viewerId);
     return res.status(200).json({ count, viewerId });
   }
