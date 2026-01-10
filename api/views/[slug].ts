@@ -1,8 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-// In-memory store (persists within the same serverless function instance)
-// Note: Counts reset on cold starts. For production persistence, use Vercel KV.
-const viewCounts = new Map<string, number>();
+import { kv } from '@vercel/kv';
 
 export default async function handler(
   req: VercelRequest,
@@ -23,18 +20,30 @@ export default async function handler(
     return res.status(400).json({ error: 'Slug required' });
   }
 
-  if (req.method === 'GET') {
-    const count = viewCounts.get(slug) || 0;
-    res.setHeader('Cache-Control', 'public, max-age=30');
-    return res.status(200).json({ count });
-  }
+  const key = `views:${slug}`;
 
-  if (req.method === 'POST') {
-    const current = viewCounts.get(slug) || 0;
-    viewCounts.set(slug, current + 1);
-    return res.status(200).json({ count: current + 1 });
-  }
+  try {
+    if (req.method === 'GET') {
+      const count = await kv.get<number>(key) || 0;
+      res.setHeader('Cache-Control', 'public, max-age=30');
+      return res.status(200).json({ count });
+    }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+    if (req.method === 'POST') {
+      // Atomically increment the count
+      const count = await kv.incr(key);
+      return res.status(200).json({ count });
+    }
+
+    return res.status(405).json({ error: 'Method not allowed' });
+  } catch (error) {
+    console.error('KV error:', error);
+    // If KV is not configured, return an error
+    // User needs to set up Vercel KV in their project settings
+    return res.status(500).json({ 
+      error: 'KV not configured. Please set up Vercel KV in your project settings.',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
 }
 
