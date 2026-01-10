@@ -60,7 +60,14 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
           // Update view count immediately after tracking
           if (data.count !== undefined && viewCountEl) {
             const count = data.count;
-            viewCountEl.textContent = count === 1 ? '1 total view' : `${count.toLocaleString()} total views`;
+            const otherCount = count - 1; // Exclude current viewer
+            if (otherCount > 0) {
+              viewCountEl.textContent = otherCount === 1 
+                ? '1 other person has read this' 
+                : `${otherCount.toLocaleString()} other people have read this`;
+            } else {
+              viewCountEl.textContent = '';
+            }
           }
         })
         .catch((error) => {
@@ -81,11 +88,14 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
         .then(data => {
           if (data.count !== undefined) {
             const count = data.count;
+            const otherCount = count - 1; // Exclude current viewer
             if (viewCountEl) {
-              if (count > 0) {
-                viewCountEl.textContent = count === 1 ? '1 total view' : `${count.toLocaleString()} total views`;
+              if (otherCount > 0) {
+                viewCountEl.textContent = otherCount === 1 
+                  ? '1 other person has read this' 
+                  : `${otherCount.toLocaleString()} other people have read this`;
               } else {
-                // Show empty initially, will update after view is tracked
+                // Don't show if no other people have read it
                 viewCountEl.textContent = '';
               }
             }
