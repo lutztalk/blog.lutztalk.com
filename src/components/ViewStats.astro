@@ -20,6 +20,12 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
 </div>
 
 <script define:vars={{ postSlug: slug }} is:inline>
+  // Track if view has been counted for this page load to prevent double counting
+  const viewTrackingKey = `view-tracked-${postSlug}-${window.location.pathname}`;
+  let viewTracked = false;
+  let viewersInterval = null;
+  let viewInterval = null;
+
   function initViewStats() {
     const slug = postSlug;
     const container = document.querySelector(`[data-view-stats][data-slug="${slug}"]`);
@@ -44,17 +50,20 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
       sessionStorage.setItem('viewer-id', viewerId);
     }
 
-    let viewersInterval = null;
-    let viewInterval = null;
+    // Clean up existing intervals
+    if (viewersInterval) clearInterval(viewersInterval);
+    if (viewInterval) clearInterval(viewInterval);
 
-    // Track view (every navigation/click to the article)
-    fetch(new URL(`/api/views/${slug}`, window.location.origin), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Viewer-ID': viewerId,
-      },
-    })
+    // Track view (only once per page load)
+    if (!viewTracked) {
+      viewTracked = true;
+      fetch(new URL(`/api/views/${slug}`, window.location.origin), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Viewer-ID': viewerId,
+        },
+      })
       .then(res => {
         if (!res.ok) {
           return res.json().then(err => {
@@ -82,7 +91,9 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
       })
       .catch((error) => {
         console.error('[ViewStats] Error tracking view:', error);
+        viewTracked = false; // Reset on error so we can retry
       });
+    }
 
     // Update view count
     function updateViewCount() {
@@ -170,10 +181,6 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
         });
     }
 
-    // Clean up existing intervals
-    if (viewersInterval) clearInterval(viewersInterval);
-    if (viewInterval) clearInterval(viewInterval);
-
     // Initial load
     updateViewCount();
     updateViewers();
@@ -202,7 +209,10 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
     initViewStats();
   }
 
-  // Run on Astro view transitions
-  document.addEventListener('astro:page-load', initViewStats);
+  // Run on Astro view transitions (reset tracking flag for new page)
+  document.addEventListener('astro:page-load', () => {
+    viewTracked = false; // Reset for new page
+    initViewStats();
+  });
 </script>
 
