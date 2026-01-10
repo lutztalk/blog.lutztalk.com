@@ -54,9 +54,18 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
           'Content-Type': 'application/json',
           'X-Viewer-ID': viewerId,
         },
-      }).catch((error) => {
-        console.error('[ViewStats] Error tracking view:', error);
-      });
+      })
+        .then(res => res.json())
+        .then(data => {
+          // Update view count immediately after tracking
+          if (data.count !== undefined && viewCountEl) {
+            const count = data.count;
+            viewCountEl.textContent = count === 1 ? '1 total view' : `${count.toLocaleString()} total views`;
+          }
+        })
+        .catch((error) => {
+          console.error('[ViewStats] Error tracking view:', error);
+        });
       sessionStorage.setItem(`view-tracked-${slug}`, 'true');
     }
 
@@ -70,10 +79,15 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
           return res.json();
         })
         .then(data => {
-          if (data.count !== undefined && data.count > 0) {
+          if (data.count !== undefined) {
             const count = data.count;
             if (viewCountEl) {
-              viewCountEl.textContent = count === 1 ? '1 total view' : `${count.toLocaleString()} total views`;
+              if (count > 0) {
+                viewCountEl.textContent = count === 1 ? '1 total view' : `${count.toLocaleString()} total views`;
+              } else {
+                // Show empty initially, will update after view is tracked
+                viewCountEl.textContent = '';
+              }
             }
           } else if (viewCountEl) {
             viewCountEl.textContent = '';
