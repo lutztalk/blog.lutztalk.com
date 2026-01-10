@@ -73,7 +73,7 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
           if (data.count !== undefined && data.count > 0) {
             const count = data.count;
             if (viewCountEl) {
-              viewCountEl.textContent = count === 1 ? '1 view' : `${count.toLocaleString()} views`;
+              viewCountEl.textContent = count === 1 ? '1 total view' : `${count.toLocaleString()} total views`;
             }
           } else if (viewCountEl) {
             viewCountEl.textContent = '';
