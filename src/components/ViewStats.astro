@@ -13,6 +13,7 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
   data-view-stats
   data-slug={slug}
 >
+  <span aria-hidden="true" class="opacity-60 mx-1 hidden view-count-separator">•</span>
   <span id={`view-count-${slug}`} class="view-count"></span>
   <span aria-hidden="true" class="opacity-60 mx-1 hidden viewers-separator">•</span>
   <span id={`viewers-count-${slug}`} class="viewers-count hidden"></span>
@@ -29,6 +30,7 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
 
     const viewCountEl = container.querySelector(`#view-count-${slug}`);
     const viewersCountEl = container.querySelector(`#viewers-count-${slug}`);
+    const viewCountSeparatorEl = container.querySelector(`.view-count-separator`);
     const viewersSeparatorEl = container.querySelector(`.viewers-separator`);
     if (!viewCountEl || !viewersCountEl) {
       console.warn('[ViewStats] Elements not found for slug:', slug);
@@ -65,8 +67,10 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
               viewCountEl.textContent = otherCount === 1 
                 ? '1 person has read this' 
                 : `${otherCount.toLocaleString()} people have read this`;
+              if (viewCountSeparatorEl) viewCountSeparatorEl.classList.remove('hidden');
             } else {
               viewCountEl.textContent = '';
+              if (viewCountSeparatorEl) viewCountSeparatorEl.classList.add('hidden');
             }
           }
         })
@@ -94,19 +98,23 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
                 viewCountEl.textContent = otherCount === 1 
                   ? '1 person has read this' 
                   : `${otherCount.toLocaleString()} people have read this`;
+                if (viewCountSeparatorEl) viewCountSeparatorEl.classList.remove('hidden');
               } else {
                 // Don't show if no other people have read it
                 viewCountEl.textContent = '';
+                if (viewCountSeparatorEl) viewCountSeparatorEl.classList.add('hidden');
               }
             }
           } else if (viewCountEl) {
             viewCountEl.textContent = '';
+            if (viewCountSeparatorEl) viewCountSeparatorEl.classList.add('hidden');
           }
         })
         .catch((error) => {
           console.error('[ViewStats] Error fetching view count:', error);
           if (viewCountEl) {
             viewCountEl.textContent = '';
+            if (viewCountSeparatorEl) viewCountSeparatorEl.classList.add('hidden');
           }
         });
     }
