@@ -7,7 +7,7 @@ This feature tracks view counts and shows how many other people are currently vi
 - **View Counter**: Tracks total views per post (increments once per session)
 - **Active Viewers**: Shows how many other people are viewing the same post right now (updates every 10 seconds)
 - **Pure Browser-Based**: All tracking happens client-side via JavaScript
-- **Vercel Edge Functions**: API endpoints run on Vercel's edge network for fast response times
+- **Astro API Routes**: Simple serverless functions that work on Vercel (no Edge Functions needed)
 
 ## Setup Instructions
 
