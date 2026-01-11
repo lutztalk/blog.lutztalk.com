@@ -1,0 +1,153 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import { Redis } from '@upstash/redis';
+
+// Simple auth check - you can enhance this later
+const authToken = Astro.url.searchParams.get('token');
+const expectedToken = import.meta.env.NEWSLETTER_AUTH_TOKEN || process.env.NEWSLETTER_AUTH_TOKEN;
+
+if (!expectedToken || authToken !== expectedToken) {
+  return Astro.redirect('/');
+}
+
+// Initialize Redis
+function getRedis() {
+  const url = import.meta.env.KV_REST_API_URL || process.env.KV_REST_API_URL;
+  const token = import.meta.env.KV_REST_API_TOKEN || process.env.KV_REST_API_TOKEN;
+
+  if (!url || !token) {
+    throw new Error('Redis not configured');
+  }
+
+  return new Redis({
+    url: url.trim(),
+    token: token.trim(),
+  });
+}
+
+const redis = getRedis();
+const subscribersKey = 'subscribers:emails';
+const webhooksKey = 'subscribers:webhooks';
+
+// Get all email subscribers
+const emailSubscribers = await redis.smembers<string[]>(subscribersKey) || [];
+
+// Get all webhook subscribers
+const webhookSubscribers = await redis.smembers<string[]>(webhooksKey) || [];
+
+// Get metadata for each subscriber
+const emailSubscribersWithMetadata = await Promise.all(
+  emailSubscribers.map(async (email) => {
+    const key = `subscriber:${email}`;
+    const metadata = await redis.get<{ subscribedAt?: number; confirmed?: boolean }>(key);
+    return {
+      email,
+      subscribedAt: metadata?.subscribedAt ? new Date(metadata.subscribedAt) : null,
+      confirmed: metadata?.confirmed || false,
+    };
+  })
+);
+
+const webhookSubscribersWithMetadata = await Promise.all(
+  webhookSubscribers.map(async (url) => {
+    const key = `webhook:${url}`;
+    const metadata = await redis.get<{ subscribedAt?: number; lastNotified?: number; failureCount?: number }>(key);
+    return {
+      url,
+      subscribedAt: metadata?.subscribedAt ? new Date(metadata.subscribedAt) : null,
+      lastNotified: metadata?.lastNotified ? new Date(metadata.lastNotified) : null,
+      failureCount: metadata?.failureCount || 0,
+    };
+  })
+);
+
+// Sort by subscription date (newest first)
+emailSubscribersWithMetadata.sort((a, b) => {
+  if (!a.subscribedAt) return 1;
+  if (!b.subscribedAt) return -1;
+  return b.subscribedAt.getTime() - a.subscribedAt.getTime();
+});
+
+webhookSubscribersWithMetadata.sort((a, b) => {
+  if (!a.subscribedAt) return 1;
+  if (!b.subscribedAt) return -1;
+  return b.subscribedAt.getTime() - a.subscribedAt.getTime();
+});
+---
+
+<Layout title="Subscribers | LutzTalk">
+  <Header />
+  <main id="main-content" class="app-layout py-12">
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-3xl font-bold mb-8">Subscribers</h1>
+
+      <!-- Email Subscribers -->
+      <section class="mb-12">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-semibold">Email Subscribers</h2>
+          <span class="text-foreground/60 text-sm">
+            {emailSubscribersWithMetadata.length} total
+          </span>
+        </div>
+        
+        {emailSubscribersWithMetadata.length === 0 ? (
+          <p class="text-foreground/60">No email subscribers yet.</p>
+        ) : (
+          <div class="bg-muted rounded-lg p-4">
+            <div class="space-y-2">
+              {emailSubscribersWithMetadata.map((subscriber) => (
+                <div class="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <div>
+                    <div class="font-medium">{subscriber.email}</div>
+                    <div class="text-sm text-foreground/60">
+                      Subscribed: {subscriber.subscribedAt ? subscriber.subscribedAt.toLocaleDateString() : 'Unknown'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      <!-- Webhook Subscribers -->
+      <section>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-semibold">Webhook Subscribers</h2>
+          <span class="text-foreground/60 text-sm">
+            {webhookSubscribersWithMetadata.length} total
+          </span>
+        </div>
+        
+        {webhookSubscribersWithMetadata.length === 0 ? (
+          <p class="text-foreground/60">No webhook subscribers yet.</p>
+        ) : (
+          <div class="bg-muted rounded-lg p-4">
+            <div class="space-y-2">
+              {webhookSubscribersWithMetadata.map((subscriber) => (
+                <div class="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium break-all">{subscriber.url}</div>
+                    <div class="text-sm text-foreground/60 space-x-4">
+                      <span>Subscribed: {subscriber.subscribedAt ? subscriber.subscribedAt.toLocaleDateString() : 'Unknown'}</span>
+                      {subscriber.lastNotified && (
+                        <span>Last notified: {subscriber.lastNotified.toLocaleDateString()}</span>
+                      )}
+                      {subscriber.failureCount > 0 && (
+                        <span class="text-red-600">Failures: {subscriber.failureCount}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  </main>
+  <Footer />
+</Layout>
+
