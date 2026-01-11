@@ -10,19 +10,20 @@ Visit the blog at [blog.lutztalk.com](https://blog.lutztalk.com)
 
 ## 🔥 Features
 
-- [x] type-safe markdown
-- [x] super fast performance
-- [x] accessible (Keyboard/VoiceOver)
-- [x] responsive (mobile ~ desktops)
-- [x] SEO-friendly
-- [x] light & dark mode
-- [x] fuzzy search
-- [x] draft posts & pagination
-- [x] sitemap & rss feed
-- [x] followed best practices
-- [x] highly customizable
-- [x] dynamic OG image generation for blog posts
-- [x] reading time estimates
+- [x] **Headless CMS** - Storyblok integration for easy content management
+- [x] **Email Subscriptions** - Readers can subscribe to get notified of new posts
+- [x] **View Statistics** - Track post views and see active readers in real-time
+- [x] **Type-safe content** - Full TypeScript support
+- [x] **Super fast performance** - Static site generation with Astro
+- [x] **Accessible** - Keyboard navigation and screen reader support
+- [x] **Responsive** - Mobile-first design that works on all devices
+- [x] **SEO-friendly** - Optimized meta tags, sitemap, and RSS feed
+- [x] **Light & dark mode** - Automatic theme switching with user preference
+- [x] **Fuzzy search** - Fast client-side search powered by Pagefind
+- [x] **Draft posts & pagination** - Control post visibility and paginate listings
+- [x] **Dynamic OG images** - Auto-generated Open Graph images for social sharing
+- [x] **Reading time estimates** - Calculated reading time for each post
+- [x] **Persistent storage** - Upstash Redis for view counts and subscriptions
 
 ## 🚀 Project Structure
 
@@ -36,21 +37,34 @@ Inside of this project, you'll see the following folders and files:
 │   └── favicon.svg
 │   └── astropaper-og.jpg
 │   └── toggle-theme.js
+├── api/
+│   ├── subscribe.ts          # Email subscription endpoint
+│   ├── unsubscribe.ts        # Email unsubscribe endpoint
+│   ├── send-newsletter.ts   # Newsletter sending endpoint
+│   ├── views/
+│   │   └── [slug].ts        # View count tracking
+│   └── viewers/
+│       └── [slug].ts         # Active viewer tracking
 ├── src/
 │   ├── assets/
 │   │   └── icons/
 │   │   └── images/
 │   ├── components/
+│   │   ├── EmailSubscribe.astro  # Subscription form
+│   │   ├── ViewStats.astro      # View counter component
+│   │   └── ...
 │   ├── data/
 │   │   └── blog/
-│   │       └── blog-posts.md
 │   ├── layouts/
-│   └── pages/
-│   └── styles/
-│   └── utils/
-│   └── config.ts
+│   ├── pages/
+│   │   ├── unsubscribe.astro    # Unsubscribe page
+│   │   └── ...
+│   ├── styles/
+│   ├── utils/
+│   │   ├── getStoryblokPosts.ts # Storyblok integration
+│   │   └── ...
+│   ├── config.ts
 │   └── constants.ts
-│   └── content.config.ts
 └── astro.config.ts
 ```
 
@@ -71,6 +85,25 @@ This blog uses [Storyblok](https://www.storyblok.com/) as a headless CMS for man
 The site will automatically rebuild when you publish content (if webhooks are configured) or you can manually trigger a rebuild in Vercel.
 
 For more details, see [STORYBLOK_SETUP.md](./STORYBLOK_SETUP.md) and [WEBHOOK_SETUP.md](./WEBHOOK_SETUP.md).
+
+## 📧 Email Subscriptions
+
+Readers can subscribe to receive email notifications when new posts are published. The subscription system uses:
+
+- **Resend** for sending emails
+- **Upstash Redis** for storing subscriber emails
+- Subscription forms on the homepage and footer
+- Unsubscribe page at `/unsubscribe`
+
+To send newsletters when you publish a new post, see [EMAIL_SUBSCRIPTION_SETUP.md](./EMAIL_SUBSCRIPTION_SETUP.md).
+
+## 📊 View Statistics
+
+Each blog post displays:
+- **Total views** - How many people have read the post
+- **Active viewers** - How many people are currently viewing the post (updates every 10 seconds)
+
+View counts are stored persistently in Upstash Redis and increment when someone visits an individual post page. For setup details, see [KV_SETUP.md](./KV_SETUP.md).
 
 ```markdown
 ---
@@ -95,6 +128,8 @@ Your content here...
 
 **Main Framework** - [Astro](https://astro.build/)  
 **CMS** - [Storyblok](https://www.storyblok.com/)  
+**Email Service** - [Resend](https://resend.com/)  
+**Database** - [Upstash Redis](https://upstash.com/) (via Vercel KV)  
 **Type Checking** - [TypeScript](https://www.typescriptlang.org/)  
 **Styling** - [TailwindCSS](https://tailwindcss.com/)  
 **Static Search** - [Pagefind](https://pagefind.app/)  
@@ -110,12 +145,39 @@ Start the project by running the following commands:
 ```bash
 # install dependencies
 npm install
+# or
+pnpm install
 
 # start running the project
 npm run dev
+# or
+pnpm dev
 ```
 
 The site will be available at `http://localhost:4321`
+
+### Environment Variables
+
+For local development, create a `.env` file in the project root:
+
+```bash
+# Required for Storyblok CMS
+STORYBLOK_TOKEN=your-storyblok-public-token
+
+# Required for email subscriptions (optional for local dev)
+RESEND_API_KEY=your-resend-api-key
+RESEND_FROM_EMAIL=noreply@lutztalk.com
+RESEND_FROM_NAME=LutzTalk Blog
+NEWSLETTER_AUTH_TOKEN=your-secret-token
+
+# Required for view stats and subscriptions (optional for local dev)
+KV_REST_API_URL=your-upstash-redis-url
+KV_REST_API_TOKEN=your-upstash-redis-token
+```
+
+**Note:** Add `.env` to your `.gitignore` to keep your tokens secure!
+
+For production, set these in your Vercel project dashboard under Settings → Environment Variables.
 
 ## 🧞 Commands
 
@@ -131,6 +193,14 @@ All commands are run from the root of the project, from a terminal:
 | `npm run format`       | Format codes with Prettier                                                                                                       |
 | `npm run sync`         | Generates TypeScript types for all Astro modules. [Learn more](https://docs.astro.build/en/reference/cli-reference/#astro-sync). |
 | `npm run lint`         | Lint with ESLint                                                                                                                 |
+
+## 📚 Additional Documentation
+
+- [STORYBLOK_SETUP.md](./STORYBLOK_SETUP.md) - Setting up Storyblok CMS
+- [WEBHOOK_SETUP.md](./WEBHOOK_SETUP.md) - Configuring webhooks for auto-rebuilds
+- [EMAIL_SUBSCRIPTION_SETUP.md](./EMAIL_SUBSCRIPTION_SETUP.md) - Email subscription system setup
+- [KV_SETUP.md](./KV_SETUP.md) - Setting up Upstash Redis for persistent storage
+- [VERCEL_ENV_SETUP.md](./VERCEL_ENV_SETUP.md) - Quick reference for Vercel environment variables
 
 ## 📜 License
 
