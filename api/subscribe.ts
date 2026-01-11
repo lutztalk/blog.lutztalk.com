@@ -187,18 +187,21 @@ export default async function handler(
           contactData.audienceId = audienceId;
         }
         
-        await resend.contacts.create(contactData);
-        console.log(`[Subscribe] Added ${normalizedEmail} to Resend${audienceId ? ` Audience ${audienceId}` : ' (default audience)'}`);
+        const result = await resend.contacts.create(contactData);
+        console.log(`[Subscribe] Successfully added ${normalizedEmail} to Resend${audienceId ? ` Audience ${audienceId}` : ' (default audience)'}`, result);
       } catch (err) {
         console.error(`[Subscribe] Failed to add to Resend Audience:`, err);
         // Log detailed error for debugging
         if (err && typeof err === 'object') {
-          const resendErr = err as { message?: string; statusCode?: number };
+          const resendErr = err as { message?: string; statusCode?: number; name?: string };
           console.error(`[Subscribe] Resend Audience error details:`, {
+            name: resendErr.name,
             message: resendErr.message,
             statusCode: resendErr.statusCode,
             email: normalizedEmail,
             audienceId: audienceId || 'default',
+            hasApiKey: !!process.env.RESEND_API_KEY,
+            apiKeyPrefix: process.env.RESEND_API_KEY?.substring(0, 10) || 'NOT SET',
           });
         }
         // Don't throw - subscription should still succeed even if Resend Audience fails
