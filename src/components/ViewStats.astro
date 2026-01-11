@@ -117,6 +117,13 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
     }
 
     function initViewStats() {
+      // Only track views on individual post pages (URLs starting with /posts/)
+      const currentPath = window.location.pathname;
+      if (!currentPath.startsWith('/posts/')) {
+        console.log('[ViewStats] Not a post page, skipping view tracking:', currentPath);
+        return;
+      }
+
       // Prevent multiple initializations
       if (isInitialized) {
         console.log('[ViewStats] Already initialized, skipping');

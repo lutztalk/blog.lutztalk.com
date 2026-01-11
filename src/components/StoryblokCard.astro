@@ -2,7 +2,6 @@
 import { slugifyStr } from "@/utils/slugify";
 import Datetime from "./Datetime.astro";
 import StoryblokReadingTime from "./StoryblokReadingTime.astro";
-import ViewStats from "./ViewStats.astro";
 import type { StoryblokPost } from "@/utils/getStoryblokPosts";
 
 type Props = {
@@ -32,7 +31,6 @@ const postUrl = `/posts/${post.slug}`;
     <Datetime pubDatetime={pubDatetime} modDatetime={modDatetime} />
     <span aria-hidden="true" class="opacity-60">•</span>
     <StoryblokReadingTime post={post} />
-    <ViewStats slug={post.slug} />
   </div>
   <p>{description}</p>
 </li>
