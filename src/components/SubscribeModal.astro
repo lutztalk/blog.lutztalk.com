@@ -194,11 +194,28 @@ const { email } = Astro.props;
     }
     
     // Setup immediately
+    console.log('[SubscribeModal] Initializing modal...');
     setupModal();
     setupOpenModal();
     
+    // Verify modal is in DOM
+    const initialModal = getModal();
+    if (initialModal) {
+      console.log('[SubscribeModal] Modal found in DOM on init');
+    } else {
+      console.error('[SubscribeModal] Modal NOT found in DOM on init!');
+    }
+    
+    // Test the global function is set
+    if ((window as any).openSubscribeModal) {
+      console.log('[SubscribeModal] openSubscribeModal function is available globally');
+    } else {
+      console.error('[SubscribeModal] openSubscribeModal function NOT available!');
+    }
+    
     // Re-setup on Astro view transitions
     document.addEventListener('astro:page-load', () => {
+      console.log('[SubscribeModal] Astro page-load event, re-initializing...');
       setupModal();
       setupOpenModal();
     });

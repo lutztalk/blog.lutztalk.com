@@ -74,6 +74,21 @@ const { variant = "inline", class: className = "" } = Astro.props;
     }
     
     console.log('[EmailSubscribe] All elements found, setting up form listener');
+    
+    // Check if modal is available
+    const modalCheck = document.querySelector('#subscribe-modal');
+    console.log('[EmailSubscribe] Modal in DOM:', !!modalCheck);
+    
+    // Check if openSubscribeModal is available
+    const hasOpenModal = !!(window as any).openSubscribeModal;
+    console.log('[EmailSubscribe] openSubscribeModal available:', hasOpenModal);
+    
+    // Wait a bit and check again (in case modal loads after this script)
+    setTimeout(() => {
+      const modalCheck2 = document.querySelector('#subscribe-modal');
+      const hasOpenModal2 = !!(window as any).openSubscribeModal;
+      console.log('[EmailSubscribe] After 1s - Modal in DOM:', !!modalCheck2, 'openSubscribeModal available:', hasOpenModal2);
+    }, 1000);
 
     function showMessage(text: string, isError = false) {
       if (!messageEl) return;
