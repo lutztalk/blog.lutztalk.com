@@ -83,6 +83,7 @@ Unsubscribe: ${siteUrl}/unsubscribe?email=${encodeURIComponent(email)}
   `.trim();
 
   try {
+    console.log(`[Subscribe] Attempting to send welcome email to ${email} from ${fromEmail}`);
     const result = await resend.emails.send({
       to: email,
       from: `${fromName} <${fromEmail}>`,
@@ -90,23 +91,25 @@ Unsubscribe: ${siteUrl}/unsubscribe?email=${encodeURIComponent(email)}
       html: emailHtml,
       text: emailText,
     });
-    console.log(`[Subscribe] Welcome email sent to ${email}`, result);
+    console.log(`[Subscribe] Welcome email sent successfully to ${email}`, JSON.stringify(result, null, 2));
     return result;
   } catch (error) {
     console.error(`[Subscribe] Error sending welcome email to ${email}:`, error);
     // Log detailed error information
-    if (error && typeof error === 'object' && 'message' in error) {
-      const err = error as { message?: string; statusCode?: number };
+    if (error && typeof error === 'object') {
+      const err = error as { message?: string; statusCode?: number; name?: string };
       console.error(`[Subscribe] Resend error details:`, {
+        name: err.name,
         message: err.message,
         statusCode: err.statusCode,
         email,
         fromEmail,
+        hasApiKey: !!process.env.RESEND_API_KEY,
+        apiKeyPrefix: process.env.RESEND_API_KEY?.substring(0, 10) || 'NOT SET',
       });
     }
-    // Don't throw - subscription should still succeed even if email fails
-    // Re-throw so the caller can log it, but wrap in a way that won't break the subscription
-    return null;
+    // Re-throw so caller can handle it
+    throw error;
   }
 }
 
@@ -168,8 +171,11 @@ export default async function handler(
 
     console.log(`[Subscribe] New subscriber: ${normalizedEmail}`);
 
-    // Send welcome email (don't await - send in background)
-    sendWelcomeEmail(normalizedEmail).catch(err => {
+    // Send welcome email (await to ensure it's sent, but don't fail subscription if it fails)
+    try {
+      await sendWelcomeEmail(normalizedEmail);
+      console.log(`[Subscribe] Welcome email successfully sent to ${normalizedEmail}`);
+    } catch (err) {
       console.error(`[Subscribe] Failed to send welcome email:`, err);
       // Log detailed error for debugging
       if (err instanceof Error) {
@@ -179,7 +185,8 @@ export default async function handler(
           email: normalizedEmail,
         });
       }
-    });
+      // Don't throw - subscription should still succeed even if email fails
+    }
 
     return res.status(200).json({ 
       success: true, 

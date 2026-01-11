@@ -112,14 +112,15 @@ const { variant = "inline", class: className = "" } = Astro.props;
           throw new Error(data.error || 'Subscription failed');
         }
 
-        if (data.alreadySubscribed) {
-          showMessage('You\'re already subscribed!', false);
+        // Show modal for both success and already-subscribed cases
+        const openModal = (window as any).openSubscribeModal;
+        if (openModal) {
+          openModal(email, data.alreadySubscribed);
+          emailInput.value = '';
         } else {
-          // Show modal instead of inline message
-          const openModal = (window as any).openSubscribeModal;
-          if (openModal) {
-            openModal(email);
-            emailInput.value = '';
+          // Fallback to inline message if modal not available
+          if (data.alreadySubscribed) {
+            showMessage('You\'re already subscribed!', false);
           } else {
             showMessage('Thanks for subscribing! Check your email to confirm.', false);
             emailInput.value = '';
