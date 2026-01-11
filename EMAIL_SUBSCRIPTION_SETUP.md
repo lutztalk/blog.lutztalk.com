@@ -19,17 +19,20 @@ The email subscription system allows readers to:
 4. Give it a name (e.g., "Blog Newsletter")
 5. Copy the API key (starts with `re_`)
 
-### 2. Verify Your Domain (Recommended)
+### 2. Verify Your Domain (Required for `noreply@lutztalk.com`)
 
-For production use, you should verify your domain:
+**IMPORTANT**: Since you're using `noreply@lutztalk.com`, you must verify the `lutztalk.com` domain:
 
 1. In Resend dashboard, go to **Domains**
 2. Click **Add Domain**
-3. Enter your domain (e.g., `blog.lutztalk.com`)
-4. Follow the DNS verification steps
-5. Once verified, you can use emails like `noreply@blog.lutztalk.com`
+3. Enter your domain: `lutztalk.com` (not blog.lutztalk.com)
+4. Follow the DNS verification steps:
+   - Add the TXT record to your DNS provider
+   - Add the MX record (if required)
+   - Wait for verification (usually a few minutes)
+5. Once verified, you can use `noreply@lutztalk.com`
 
-**Note:** You can also use Resend's test domain (`onboarding@resend.dev`) for testing, but it's limited.
+**Note:** Until your domain is verified, emails will fail. You can temporarily use Resend's test domain (`onboarding@resend.dev`) for testing.
 
 ### 3. Set Environment Variables in Vercel
 
