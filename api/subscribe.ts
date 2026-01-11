@@ -96,15 +96,17 @@ Unsubscribe: ${siteUrl}/unsubscribe?email=${encodeURIComponent(email)}
     console.error(`[Subscribe] Error sending welcome email to ${email}:`, error);
     // Log detailed error information
     if (error && typeof error === 'object' && 'message' in error) {
+      const err = error as { message?: string; statusCode?: number };
       console.error(`[Subscribe] Resend error details:`, {
-        message: (error as any).message,
-        statusCode: (error as any).statusCode,
+        message: err.message,
+        statusCode: err.statusCode,
         email,
         fromEmail,
       });
     }
     // Don't throw - subscription should still succeed even if email fails
-    throw error; // Re-throw so the caller can log it
+    // Re-throw so the caller can log it, but wrap in a way that won't break the subscription
+    return null;
   }
 }
 
