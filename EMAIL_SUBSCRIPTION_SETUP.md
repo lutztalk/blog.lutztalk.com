@@ -24,18 +24,18 @@ The email subscription system allows readers to:
 
 **Note**: If you see the error "This API key is restricted to only send emails" when subscribing, you need to create a new API key with full permissions.
 
-### 2. Verify Your Domain (Required for `noreply@lutztalk.com`)
+### 2. Verify Your Domain (Required)
 
-**IMPORTANT**: Since you're using `noreply@lutztalk.com`, you must verify the `lutztalk.com` domain:
+**IMPORTANT**: Since you're using `blog@lutztalk.com`, you must verify the `lutztalk.com` domain:
 
 1. In Resend dashboard, go to **Domains**
 2. Click **Add Domain**
-3. Enter your domain: `lutztalk.com` (not blog.lutztalk.com)
+3. Enter your domain: `lutztalk.com`
 4. Follow the DNS verification steps:
    - Add the TXT record to your DNS provider
    - Add the MX record (if required)
    - Wait for verification (usually a few minutes)
-5. Once verified, you can use `noreply@lutztalk.com`
+5. Once verified, you can use `blog@lutztalk.com`
 
 **Note:** Until your domain is verified, emails will fail. You can temporarily use Resend's test domain (`onboarding@resend.dev`) for testing.
 
@@ -47,7 +47,7 @@ Go to your Vercel project dashboard and add these environment variables:
 - `RESEND_API_KEY` - Your Resend API key (e.g., `re_xxxxxxxxxxxxx`)
 
 **Optional (with defaults):**
-- `RESEND_FROM_EMAIL` - Email address to send from (default: `noreply@blog.lutztalk.com`)
+- `RESEND_FROM_EMAIL` - Email address to send from (default: `blog@lutztalk.com`)
 - `RESEND_FROM_NAME` - Display name for emails (default: `LutzTalk Blog`)
 - `RESEND_AUDIENCE_ID` - Your Resend Audience ID (optional - if not set, contacts will be added to the default audience)
 - `SITE_URL` - Your site URL (default: `https://blog.lutztalk.com`)

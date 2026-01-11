@@ -38,7 +38,7 @@ async function sendWelcomeEmail(email: string) {
   }
 
   const siteUrl = process.env.SITE_URL || 'https://blog.lutztalk.com';
-  const fromEmail = process.env.RESEND_FROM_EMAIL || 'blog@blog.lutztalk.com';
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'blog@lutztalk.com';
   const fromName = process.env.RESEND_FROM_NAME || 'LutzTalk Blog';
 
   const emailHtml = `
