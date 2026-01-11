@@ -113,11 +113,16 @@ const { variant = "inline", class: className = "" } = Astro.props;
         }
 
         // Show modal for both success and already-subscribed cases
+        // Wait a bit for modal to be ready (in case of view transitions)
         const openModal = (window as any).openSubscribeModal;
         if (openModal) {
-          openModal(email, data.alreadySubscribed);
+          // Small delay to ensure modal is in DOM
+          setTimeout(() => {
+            openModal(email, data.alreadySubscribed);
+          }, 100);
           emailInput.value = '';
         } else {
+          console.warn('[EmailSubscribe] openSubscribeModal not found, using fallback message');
           // Fallback to inline message if modal not available
           if (data.alreadySubscribed) {
             showMessage('You\'re already subscribed!', false);

@@ -86,85 +86,118 @@ const { email } = Astro.props;
 
 <script>
   (function() {
-    const modal = document.querySelector<HTMLDivElement>('#subscribe-modal');
-    const closeBtn = document.querySelector<HTMLButtonElement>('#close-modal-btn');
-    const closeButton = document.querySelector<HTMLButtonElement>('#modal-close-button');
-    
-    if (!modal) return;
+    function getModal() {
+      return document.querySelector<HTMLDivElement>('#subscribe-modal');
+    }
 
     function closeModal() {
+      const modal = getModal();
       if (!modal) return;
       modal.classList.add('hidden');
       modal.classList.remove('flex');
       document.body.style.overflow = '';
     }
 
-    function openModal() {
-      if (!modal) return;
+    function openModalInternal() {
+      const modal = getModal();
+      if (!modal) {
+        console.warn('[SubscribeModal] Modal not found in DOM');
+        return;
+      }
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       document.body.style.overflow = 'hidden';
+      
       // Focus the close button for accessibility
+      const closeButton = modal.querySelector<HTMLButtonElement>('#modal-close-button');
       if (closeButton) {
         closeButton.focus();
       }
     }
 
-    // Close on button click
-    if (closeBtn) {
-      closeBtn.addEventListener('click', closeModal);
-    }
-    if (closeButton) {
-      closeButton.addEventListener('click', closeModal);
-    }
+    function setupModal() {
+      const modal = getModal();
+      if (!modal) {
+        console.warn('[SubscribeModal] Modal element not found');
+        return;
+      }
 
-    // Close on outside click
-    if (modal) {
+      const closeBtn = modal.querySelector<HTMLButtonElement>('#close-modal-btn');
+      const closeButton = modal.querySelector<HTMLButtonElement>('#modal-close-button');
+
+      // Close on button click
+      if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+      }
+      if (closeButton) {
+        closeButton.addEventListener('click', closeModal);
+      }
+
+      // Close on outside click
       modal.addEventListener('click', (e) => {
         if (e.target === modal) {
           closeModal();
         }
       });
-    }
 
-    // Close on Escape key
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
-        closeModal();
-      }
-    });
-
-    // Expose openModal globally so EmailSubscribe can call it
-    (window as any).openSubscribeModal = (email?: string, isAlreadySubscribed = false) => {
-      if (!modal) return;
-      
-      const titleEl = modal.querySelector('#modal-title-text');
-      const messageEl = modal.querySelector('#modal-message');
-      const emailEl = modal.querySelector('#modal-email') || modal.querySelector('strong');
-      
-      if (isAlreadySubscribed) {
-        if (titleEl) titleEl.textContent = 'Already Subscribed!';
-        if (messageEl) {
-          if (email) {
-            messageEl.innerHTML = `You're already subscribed with <strong>${email}</strong>. You'll receive notifications when new posts are published.`;
-          } else {
-            messageEl.textContent = "You're already subscribed! You'll receive notifications when new posts are published.";
+      // Close on Escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          const currentModal = getModal();
+          if (currentModal && !currentModal.classList.contains('hidden')) {
+            closeModal();
           }
         }
-      } else {
-        if (titleEl) titleEl.textContent = 'Thanks for subscribing!';
-        if (emailEl && email) {
-          emailEl.textContent = email;
+      });
+    }
+
+    // Expose openModal globally so EmailSubscribe can call it
+    function setupOpenModal() {
+      (window as any).openSubscribeModal = (email?: string, isAlreadySubscribed = false) => {
+        // Re-query modal in case DOM changed (Astro view transitions)
+        const modal = getModal();
+        if (!modal) {
+          console.warn('[SubscribeModal] Modal not found when trying to open');
+          return;
         }
-        if (messageEl && email) {
-          messageEl.innerHTML = `We've sent a confirmation email to <strong>${email}</strong>. Check your inbox!`;
-        } else if (messageEl) {
-          messageEl.textContent = "Check your email for a confirmation message. We'll notify you whenever a new post is published.";
+        
+        const titleEl = modal.querySelector('#modal-title-text');
+        const messageEl = modal.querySelector('#modal-message');
+        const emailEl = modal.querySelector('#modal-email') || modal.querySelector('strong');
+        
+        if (isAlreadySubscribed) {
+          if (titleEl) titleEl.textContent = 'Already Subscribed!';
+          if (messageEl) {
+            if (email) {
+              messageEl.innerHTML = `You're already subscribed with <strong>${email}</strong>. You'll receive notifications when new posts are published.`;
+            } else {
+              messageEl.textContent = "You're already subscribed! You'll receive notifications when new posts are published.";
+            }
+          }
+        } else {
+          if (titleEl) titleEl.textContent = 'Thanks for subscribing!';
+          if (emailEl && email) {
+            emailEl.textContent = email;
+          }
+          if (messageEl && email) {
+            messageEl.innerHTML = `We've sent a confirmation email to <strong>${email}</strong>. Check your inbox!`;
+          } else if (messageEl) {
+            messageEl.textContent = "Check your email for a confirmation message. We'll notify you whenever a new post is published.";
+          }
         }
-      }
-      
-      openModal();
-    };
+        
+        openModalInternal();
+      };
+    }
+    
+    // Setup immediately
+    setupModal();
+    setupOpenModal();
+    
+    // Re-setup on Astro view transitions
+    document.addEventListener('astro:page-load', () => {
+      setupModal();
+      setupOpenModal();
+    });
   })();
 </script>
-
