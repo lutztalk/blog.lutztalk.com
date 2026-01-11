@@ -171,6 +171,41 @@ export default async function handler(
 
     console.log(`[Subscribe] New subscriber: ${normalizedEmail}`);
 
+    // Add to Resend Audience
+    const resend = getResend();
+    const audienceId = process.env.RESEND_AUDIENCE_ID?.trim();
+    
+    if (resend && audienceId) {
+      try {
+        await resend.contacts.create({
+          email: normalizedEmail,
+          audienceId: audienceId,
+          unsubscribed: false,
+        });
+        console.log(`[Subscribe] Added ${normalizedEmail} to Resend Audience ${audienceId}`);
+      } catch (err) {
+        console.error(`[Subscribe] Failed to add to Resend Audience:`, err);
+        // Log detailed error for debugging
+        if (err && typeof err === 'object') {
+          const resendErr = err as { message?: string; statusCode?: number };
+          console.error(`[Subscribe] Resend Audience error details:`, {
+            message: resendErr.message,
+            statusCode: resendErr.statusCode,
+            email: normalizedEmail,
+            audienceId,
+          });
+        }
+        // Don't throw - subscription should still succeed even if Resend Audience fails
+      }
+    } else {
+      if (!resend) {
+        console.log('[Subscribe] Resend not configured, skipping Audience add');
+      }
+      if (!audienceId) {
+        console.log('[Subscribe] RESEND_AUDIENCE_ID not set, skipping Audience add');
+      }
+    }
+
     // Send welcome email (await to ensure it's sent, but don't fail subscription if it fails)
     try {
       await sendWelcomeEmail(normalizedEmail);

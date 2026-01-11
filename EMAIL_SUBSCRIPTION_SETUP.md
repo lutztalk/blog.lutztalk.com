@@ -19,7 +19,14 @@ The email subscription system allows readers to:
 4. Give it a name (e.g., "Blog Newsletter")
 5. Copy the API key (starts with `re_`)
 
-### 2. Verify Your Domain (Required for `noreply@lutztalk.com`)
+### 2. Create an Audience in Resend
+
+1. In Resend dashboard, go to **Audience**
+2. Click **Create Audience**
+3. Give it a name (e.g., "Blog Subscribers")
+4. **Copy the Audience ID** (you'll need this for the `RESEND_AUDIENCE_ID` environment variable)
+
+### 3. Verify Your Domain (Required for `noreply@lutztalk.com`)
 
 **IMPORTANT**: Since you're using `noreply@lutztalk.com`, you must verify the `lutztalk.com` domain:
 
@@ -34,7 +41,7 @@ The email subscription system allows readers to:
 
 **Note:** Until your domain is verified, emails will fail. You can temporarily use Resend's test domain (`onboarding@resend.dev`) for testing.
 
-### 3. Set Environment Variables in Vercel
+### 4. Set Environment Variables in Vercel
 
 Go to your Vercel project dashboard and add these environment variables:
 
@@ -44,10 +51,11 @@ Go to your Vercel project dashboard and add these environment variables:
 **Optional (with defaults):**
 - `RESEND_FROM_EMAIL` - Email address to send from (default: `noreply@blog.lutztalk.com`)
 - `RESEND_FROM_NAME` - Display name for emails (default: `LutzTalk Blog`)
+- `RESEND_AUDIENCE_ID` - Your Resend Audience ID (required to add subscribers to Resend Audience - see step 2)
 - `SITE_URL` - Your site URL (default: `https://blog.lutztalk.com`)
 - `NEWSLETTER_AUTH_TOKEN` - Secret token to protect the send-newsletter endpoint (generate a random string)
 
-### 4. Generate Newsletter Auth Token
+### 5. Generate Newsletter Auth Token
 
 Generate a secure random token for the newsletter sending endpoint:
 
@@ -66,7 +74,8 @@ Add this as `NEWSLETTER_AUTH_TOKEN` in Vercel.
 
 1. Users enter their email in the subscription form (on homepage or footer)
 2. Email is stored in Redis set: `subscribers:emails`
-3. Subscription metadata is stored: `subscriber:{email}`
+3. Email is added to Resend Audience (if `RESEND_AUDIENCE_ID` is configured)
+4. Subscription metadata is stored: `subscriber:{email}`
 
 ### Sending Newsletters
 
