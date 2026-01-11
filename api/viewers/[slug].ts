@@ -1,28 +1,61 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { Redis } from '@upstash/redis';
 
-interface Viewer {
-  id: string;
-  lastSeen: number;
+// Initialize Redis from environment variables
+function getRedis() {
+  const url = process.env.KV_REST_API_URL?.trim();
+  const token = process.env.KV_REST_API_TOKEN?.trim();
+
+  if (!url || !token) {
+    throw new Error('Redis environment variables not set. KV_REST_API_URL and KV_REST_API_TOKEN are required.');
+  }
+
+  return new Redis({
+    url,
+    token,
+  });
 }
 
-// In-memory store for active viewers (persists within the same serverless function instance)
-// Note: Data resets on cold starts. For production persistence, use Vercel KV.
-const activeViewers = new Map<string, Map<string, Viewer>>();
-const VIEWER_TIMEOUT = 30000; // 30 seconds
+const VIEWER_TIMEOUT = 30000; // 30 seconds (in milliseconds)
+const VIEWER_TTL = 35; // TTL in seconds (slightly longer than timeout for cleanup buffer)
 
-// Clean up old viewers
-function cleanupViewers() {
+// Clean up old viewers from Redis
+async function cleanupViewers(redis: Redis, slug: string): Promise<number> {
   const now = Date.now();
-  activeViewers.forEach((viewers, slug) => {
-    viewers.forEach((viewer, id) => {
-      if (now - viewer.lastSeen > VIEWER_TIMEOUT) {
-        viewers.delete(id);
+  const viewerSetKey = `viewers:${slug}:set`;
+  
+  // Get all viewer IDs from the set
+  const viewerIds = await redis.smembers<string[]>(viewerSetKey) || [];
+  
+  if (viewerIds.length === 0) {
+    return 0;
+  }
+  
+  // Check each viewer's last seen time and remove stale ones
+  const activeViewerIds: string[] = [];
+  const viewerKeyPrefix = `viewers:${slug}:`;
+  
+  for (const viewerId of viewerIds) {
+    const viewerKey = `${viewerKeyPrefix}${viewerId}`;
+    const lastSeen = await redis.get<number>(viewerKey);
+    
+    if (lastSeen && typeof lastSeen === 'number') {
+      const age = now - lastSeen;
+      if (age < VIEWER_TIMEOUT) {
+        activeViewerIds.push(viewerId);
+      } else {
+        // Remove stale viewer
+        await redis.del(viewerKey);
+        await redis.srem(viewerSetKey, viewerId);
+        console.log(`[Viewers API] Cleaned up stale viewer ${viewerId} for slug ${slug}`);
       }
-    });
-    if (viewers.size === 0) {
-      activeViewers.delete(slug);
+    } else {
+      // Viewer key doesn't exist or expired, remove from set
+      await redis.srem(viewerSetKey, viewerId);
     }
-  });
+  }
+  
+  return activeViewerIds.length;
 }
 
 export default async function handler(
@@ -44,47 +77,76 @@ export default async function handler(
     return res.status(400).json({ error: 'Slug required' });
   }
 
-  if (req.method === 'GET') {
-    cleanupViewers();
-    const viewers = activeViewers.get(slug) || new Map();
-    const count = viewers.size;
-    res.setHeader('Cache-Control', 'no-cache');
-    return res.status(200).json({ count });
-  }
+  try {
+    const redis = getRedis();
+    const viewerSetKey = `viewers:${slug}:set`;
 
-  if (req.method === 'POST') {
-    const viewerId = (req.headers['x-viewer-id'] as string) || 
-      `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-
-    // Clean up old viewers first
-    cleanupViewers();
-
-    if (!activeViewers.has(slug)) {
-      activeViewers.set(slug, new Map());
+    if (req.method === 'GET') {
+      // Clean up and get count
+      const count = await cleanupViewers(redis, slug);
+      console.log(`[Viewers API] GET ${slug}: count=${count}`);
+      res.setHeader('Cache-Control', 'no-cache');
+      return res.status(200).json({ count });
     }
 
-    const viewers = activeViewers.get(slug)!;
-    const now = Date.now();
-    
-    // Update or add viewer
-    viewers.set(viewerId, {
-      id: viewerId,
-      lastSeen: now,
+    if (req.method === 'POST') {
+      const viewerId = (req.headers['x-viewer-id'] as string);
+      
+      if (!viewerId) {
+        return res.status(400).json({ error: 'X-Viewer-ID header required' });
+      }
+
+      // Check if this is a removal request (from page unload)
+      // Can come from query param or body
+      const isRemoval = req.query.remove === 'true' || 
+                       (req.body && typeof req.body === 'object' && 'viewerId' in req.body);
+      
+      if (isRemoval) {
+        // Remove viewer immediately
+        const viewerKey = `viewers:${slug}:${viewerId}`;
+        await redis.del(viewerKey);
+        await redis.srem(viewerSetKey, viewerId);
+        const count = await cleanupViewers(redis, slug);
+        console.log(`[Viewers API] REMOVE ${slug}: viewerId=${viewerId}, remainingCount=${count}`);
+        return res.status(200).json({ count, removed: true });
+      }
+
+      const now = Date.now();
+      const viewerKey = `viewers:${slug}:${viewerId}`;
+      
+      // Update viewer's last seen time with TTL
+      await redis.set(viewerKey, now, { ex: VIEWER_TTL });
+      
+      // Add viewer ID to the set (also with TTL, but we'll manage it manually)
+      await redis.sadd(viewerSetKey, viewerId);
+      await redis.expire(viewerSetKey, VIEWER_TTL); // Refresh set TTL
+      
+      // Clean up stale viewers and get accurate count
+      const count = await cleanupViewers(redis, slug);
+      
+      console.log(`[Viewers API] POST ${slug}: viewerId=${viewerId}, totalCount=${count}`);
+      
+      res.setHeader('X-Viewer-ID', viewerId);
+      return res.status(200).json({ count, viewerId });
+    }
+
+    return res.status(405).json({ error: 'Method not allowed' });
+  } catch (error) {
+    console.error('[Viewers API] Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[Viewers API] Error details:', {
+      message: errorMessage,
+      hasUrl: !!process.env.KV_REST_API_URL,
+      hasToken: !!process.env.KV_REST_API_TOKEN,
+      slug,
     });
-
-    // Clean up again after adding (in case we added a stale one)
-    cleanupViewers();
-
-    // Get the final count after cleanup
-    const finalViewers = activeViewers.get(slug) || new Map();
-    const count = finalViewers.size;
-    
-    console.log(`[Viewers API] POST ${slug}: viewerId=${viewerId}, totalCount=${count}`);
-    
-    res.setHeader('X-Viewer-ID', viewerId);
-    return res.status(200).json({ count, viewerId });
+    return res.status(500).json({ 
+      error: 'Redis error',
+      details: errorMessage,
+      configured: {
+        hasUrl: !!process.env.KV_REST_API_URL,
+        hasToken: !!process.env.KV_REST_API_TOKEN,
+      }
+    });
   }
-
-  return res.status(405).json({ error: 'Method not allowed' });
 }
-

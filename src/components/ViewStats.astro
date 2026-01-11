@@ -237,18 +237,38 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
       updateViewCount();
       updateViewers();
 
-      // Update viewers every 10 seconds
+      // Update viewers every 10 seconds (heartbeat)
       viewersInterval = setInterval(updateViewers, 10000);
 
       // Update view count every 30 seconds
       viewInterval = setInterval(updateViewCount, 30000);
 
-      // Clean up on page unload
+      // Clean up on page unload - try to remove viewer immediately
       const cleanup = () => {
         if (viewersInterval) clearInterval(viewersInterval);
         if (viewInterval) clearInterval(viewInterval);
+        
+        // Try to remove viewer from active list (fire and forget)
+        if (viewerId) {
+          const removeUrl = new URL(`/api/viewers/${slug}?remove=true`, window.location.origin);
+          
+          // Use fetch with keepalive for reliable delivery on page unload
+          fetch(removeUrl.toString(), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Viewer-ID': viewerId,
+            },
+            body: JSON.stringify({ viewerId }),
+            keepalive: true, // Ensures request completes even if page unloads
+          }).catch(() => {
+            // Ignore errors on unload - cleanup will happen via TTL anyway
+          });
+        }
       };
+      
       window.addEventListener('beforeunload', cleanup);
+      window.addEventListener('pagehide', cleanup); // Also handle pagehide for better mobile support
     }
 
     // Use a single initialization function that handles both cases
