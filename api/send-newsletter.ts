@@ -54,15 +54,20 @@ export default async function handler(
     const redis = getRedis();
     const resend = getResend();
     const subscribersKey = 'subscribers:emails';
+    const webhooksKey = 'subscribers:webhooks';
 
-    // Get all subscribers
+    // Get all email subscribers
     const subscribers = await redis.smembers<string[]>(subscribersKey) || [];
+    
+    // Get all webhook subscribers
+    const webhooks = await redis.smembers<string[]>(webhooksKey) || [];
 
-    if (subscribers.length === 0) {
+    if (subscribers.length === 0 && webhooks.length === 0) {
       return res.status(200).json({ 
         success: true,
         message: 'No subscribers to notify',
-        sent: 0
+        sent: 0,
+        webhooksNotified: 0
       });
     }
 
@@ -141,12 +146,106 @@ Unsubscribe: ${siteUrl}/unsubscribe?email={{email}}
 
     console.log(`[Newsletter] Sent ${sentCount} emails, ${errorCount} errors`);
 
+    // Send webhook notifications
+    let webhookSuccessCount = 0;
+    let webhookErrorCount = 0;
+    const webhookPayload = {
+      event: 'new_post',
+      post: {
+        title: postTitle,
+        url: postUrl,
+        description: postDescription || null,
+        publishedAt: new Date().toISOString(),
+      },
+    };
+
+    for (const webhookUrl of webhooks) {
+      try {
+        // Create an AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'LutzTalk-Blog/1.0',
+          },
+          body: JSON.stringify(webhookPayload),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          webhookSuccessCount++;
+          
+          // Update webhook metadata
+          const webhookKey = `webhook:${webhookUrl}`;
+          await redis.set(webhookKey, {
+            url: webhookUrl,
+            lastNotified: Date.now(),
+            failureCount: 0,
+          }, { ex: 60 * 60 * 24 * 365 }); // 1 year TTL
+          
+          console.log(`[Newsletter] Webhook notification sent to ${webhookUrl}`);
+        } else {
+          webhookErrorCount++;
+          console.error(`[Newsletter] Webhook ${webhookUrl} returned status ${response.status}`);
+          
+          // Increment failure count
+          const webhookKey = `webhook:${webhookUrl}`;
+          const webhookData = await redis.get<{ failureCount?: number }>(webhookKey);
+          const failureCount = (webhookData?.failureCount || 0) + 1;
+          
+          // If too many failures, remove webhook (optional - you might want to keep it)
+          if (failureCount >= 5) {
+            console.warn(`[Newsletter] Removing webhook ${webhookUrl} after ${failureCount} failures`);
+            await redis.srem(webhooksKey, webhookUrl);
+            await redis.del(webhookKey);
+          } else {
+            await redis.set(webhookKey, {
+              url: webhookUrl,
+              lastNotified: null,
+              failureCount,
+            }, { ex: 60 * 60 * 24 * 365 });
+          }
+        }
+      } catch (error) {
+        webhookErrorCount++;
+        console.error(`[Newsletter] Error sending webhook to ${webhookUrl}:`, error);
+        
+        // Increment failure count
+        const webhookKey = `webhook:${webhookUrl}`;
+        const webhookData = await redis.get<{ failureCount?: number }>(webhookKey);
+        const failureCount = (webhookData?.failureCount || 0) + 1;
+        
+        // If too many failures, remove webhook
+        if (failureCount >= 5) {
+          console.warn(`[Newsletter] Removing webhook ${webhookUrl} after ${failureCount} failures`);
+          await redis.srem(webhooksKey, webhookUrl);
+          await redis.del(webhookKey);
+        } else {
+          await redis.set(webhookKey, {
+            url: webhookUrl,
+            lastNotified: null,
+            failureCount,
+          }, { ex: 60 * 60 * 24 * 365 });
+        }
+      }
+    }
+
+    console.log(`[Newsletter] Notified ${webhookSuccessCount} webhooks, ${webhookErrorCount} errors`);
+
     return res.status(200).json({ 
       success: true,
       message: 'Newsletter sent',
       sent: sentCount,
       errors: errorCount,
-      total: subscribers.length
+      total: subscribers.length,
+      webhooksNotified: webhookSuccessCount,
+      webhookErrors: webhookErrorCount,
+      totalWebhooks: webhooks.length
     });
   } catch (error) {
     console.error('[Newsletter] Error:', error);

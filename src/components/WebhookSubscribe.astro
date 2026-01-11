@@ -1,0 +1,133 @@
+---
+type Props = {
+  variant?: "inline" | "block";
+  class?: string;
+};
+
+const { variant = "inline", class: className = "" } = Astro.props;
+---
+
+<div 
+  class:list={[
+    "webhook-subscribe",
+    variant === "block" ? "flex flex-col gap-2" : "flex flex-col sm:flex-row gap-2",
+    className
+  ]}
+>
+  <form 
+    id="webhook-subscribe-form"
+    class:list={[
+      "flex gap-2",
+      variant === "block" ? "flex-col" : "flex-col sm:flex-row"
+    ]}
+  >
+    <input
+      type="url"
+      id="webhook-url-input"
+      name="webhookUrl"
+      placeholder="https://your-server.com/webhook"
+      required
+      class:list={[
+        "px-4 py-2 rounded border border-border bg-background text-foreground",
+        "focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent",
+        "placeholder:text-muted",
+        variant === "block" ? "w-full" : "flex-1 min-w-0"
+      ]}
+      aria-label="Webhook URL"
+    />
+    <button
+      type="submit"
+      class:list={[
+        "px-6 py-2 rounded bg-accent text-background font-medium",
+        "hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2",
+        "transition-opacity disabled:opacity-50 disabled:cursor-not-allowed",
+        variant === "block" ? "w-full" : "whitespace-nowrap"
+      ]}
+      id="subscribe-webhook-button"
+    >
+      Subscribe
+    </button>
+  </form>
+  <div id="webhook-message" class="text-sm text-muted hidden"></div>
+</div>
+
+<script>
+  (function() {
+    const form = document.querySelector<HTMLFormElement>('#webhook-subscribe-form');
+    const urlInput = document.querySelector<HTMLInputElement>('#webhook-url-input');
+    const submitButton = document.querySelector<HTMLButtonElement>('#subscribe-webhook-button');
+    const messageEl = document.querySelector<HTMLDivElement>('#webhook-message');
+    
+    if (!form || !urlInput || !submitButton || !messageEl) return;
+
+    function showMessage(text: string, isError = false) {
+      if (!messageEl) return;
+      messageEl.textContent = text;
+      messageEl.classList.remove('hidden');
+      messageEl.classList.remove('text-muted', 'text-green-600', 'text-red-600');
+      messageEl.classList.add(isError ? 'text-red-600' : 'text-green-600');
+      
+      // Hide message after 5 seconds
+      setTimeout(() => {
+        if (messageEl) {
+          messageEl.classList.add('hidden');
+        }
+      }, 5000);
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const webhookUrl = urlInput.value.trim();
+      if (!webhookUrl) {
+        showMessage('Please enter a webhook URL', true);
+        return;
+      }
+
+      // Basic URL validation
+      try {
+        new URL(webhookUrl);
+      } catch {
+        showMessage('Please enter a valid URL (must start with http:// or https://)', true);
+        return;
+      }
+
+      // Disable button and show loading state
+      submitButton.disabled = true;
+      submitButton.textContent = 'Subscribing...';
+
+      try {
+        const response = await fetch('/api/subscribe-webhook', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ webhookUrl }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Subscription failed');
+        }
+
+        if (data.alreadySubscribed) {
+          showMessage('This webhook URL is already subscribed!', false);
+        } else {
+          showMessage('Webhook subscribed successfully! You\'ll receive notifications when new posts are published.', false);
+          urlInput.value = '';
+        }
+      } catch (error) {
+        console.error('Webhook subscription error:', error);
+        showMessage(
+          error instanceof Error ? error.message : 'Something went wrong. Please try again.',
+          true
+        );
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Subscribe';
+      }
+    });
+  })();
+</script>
+
