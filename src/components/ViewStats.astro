@@ -30,6 +30,7 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
     let viewCountSeparatorEl = null;
     let viewersSeparatorEl = null;
     let viewerId = null;
+    let viewTrackingInProgress = false; // Flag to prevent concurrent tracking
 
     // Update view count
     function updateViewCount() {
@@ -153,17 +154,30 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
       }
 
       // Track if view has been counted for this specific page load using sessionStorage
-      const viewTrackingKey = `view-tracked-${slug}-${window.location.pathname}`;
+      // Use a simpler key that's unique per slug per session
+      const viewTrackingKey = `view-tracked-${slug}`;
       const viewTracked = sessionStorage.getItem(viewTrackingKey);
+      
+      console.log('[ViewStats] Checking view tracking:', {
+        slug,
+        key: viewTrackingKey,
+        tracked: !!viewTracked,
+        inProgress: viewTrackingInProgress,
+        pathname: window.location.pathname
+      });
 
       // Clean up existing intervals
       if (viewersInterval) clearInterval(viewersInterval);
       if (viewInterval) clearInterval(viewInterval);
 
       // Track view (only once per page load, using sessionStorage for persistence)
-      if (!viewTracked) {
+      // Use both sessionStorage check AND in-memory flag to prevent race conditions
+      if (!viewTracked && !viewTrackingInProgress) {
+        // Set both flags immediately to prevent concurrent calls
+        viewTrackingInProgress = true;
         sessionStorage.setItem(viewTrackingKey, 'true');
-        console.log('[ViewStats] Tracking view for slug:', slug);
+        console.log('[ViewStats] Tracking view for slug:', slug, 'key:', viewTrackingKey);
+        
         fetch(new URL(`/api/views/${slug}`, window.location.origin), {
           method: 'POST',
           headers: {
@@ -173,7 +187,9 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
         })
         .then(res => {
           if (!res.ok) {
-            sessionStorage.removeItem(viewTrackingKey); // Remove on error so we can retry
+            // Remove flags on error so we can retry
+            sessionStorage.removeItem(viewTrackingKey);
+            viewTrackingInProgress = false;
             return res.json().then(err => {
               console.error('[ViewStats] POST error:', err);
               throw new Error(`HTTP error! status: ${res.status}, ${JSON.stringify(err)}`);
@@ -183,6 +199,7 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
         })
         .then(data => {
           console.log('[ViewStats] POST response:', data);
+          viewTrackingInProgress = false; // Clear flag on success
           // Update view count immediately after tracking
           if (data.count !== undefined && viewCountEl) {
             const count = Number(data.count);
@@ -199,9 +216,16 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
         })
         .catch((error) => {
           console.error('[ViewStats] Error tracking view:', error);
+          viewTrackingInProgress = false; // Clear flag on error
+          sessionStorage.removeItem(viewTrackingKey); // Remove on error so we can retry
         });
       } else {
-        console.log('[ViewStats] View already tracked for this page load');
+        if (viewTracked) {
+          console.log('[ViewStats] View already tracked for this page load (sessionStorage)');
+        }
+        if (viewTrackingInProgress) {
+          console.log('[ViewStats] View tracking already in progress, skipping');
+        }
         // Still update the display even if already tracked
         updateViewCount();
       }
@@ -227,25 +251,49 @@ const { slug, class: className = "", size = "sm" } = Astro.props;
       window.addEventListener('beforeunload', cleanup);
     }
 
+    // Use a single initialization function that handles both cases
+    function initializeOnce() {
+      // Only track views on individual post pages (URLs starting with /posts/)
+      const currentPath = window.location.pathname;
+      if (!currentPath.startsWith('/posts/')) {
+        return; // Don't initialize on non-post pages
+      }
+
+      // Prevent multiple initializations - check both flags
+      if (isInitialized) {
+        console.log('[ViewStats] Already initialized, skipping');
+        return;
+      }
+
+      initViewStats();
+    }
+
     // Run on initial load
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initViewStats);
+      document.addEventListener('DOMContentLoaded', initializeOnce);
     } else {
-      initViewStats();
+      initializeOnce();
     }
 
     // Run on Astro view transitions (reset for new page)
     document.addEventListener('astro:page-load', () => {
-      // Clear the tracking flag for the new page
-      const oldTrackingKey = `view-tracked-${slug}-${window.location.pathname}`;
+      // Only reset if we're on a post page
+      const currentPath = window.location.pathname;
+      if (!currentPath.startsWith('/posts/')) {
+        return; // Don't initialize on non-post pages
+      }
+
+      // Clear the tracking flag for this slug (will be set again if needed)
+      const oldTrackingKey = `view-tracked-${slug}`;
       sessionStorage.removeItem(oldTrackingKey);
       isInitialized = false;
+      viewTrackingInProgress = false; // Reset tracking flag
       // Reset element references
       viewCountEl = null;
       viewersCountEl = null;
       viewCountSeparatorEl = null;
       viewersSeparatorEl = null;
-      initViewStats();
+      initializeOnce();
     });
   })();
 </script>
