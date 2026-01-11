@@ -56,10 +56,11 @@ export default async function handler(
     const subscribersKey = 'subscribers:emails';
     const webhooksKey = 'subscribers:webhooks';
 
-    // Get all email subscribers
+    // Get all email subscribers from Redis (source of truth)
+    // Note: We pull from Redis, not Resend Audience, to ensure we send to all subscribers
     const subscribers = await redis.smembers<string[]>(subscribersKey) || [];
     
-    // Get all webhook subscribers
+    // Get all webhook subscribers from Redis
     const webhooks = await redis.smembers<string[]>(webhooksKey) || [];
 
     if (subscribers.length === 0 && webhooks.length === 0) {
