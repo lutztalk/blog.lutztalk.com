@@ -1,0 +1,169 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import EmailSubscribe from "@/components/EmailSubscribe.astro";
+import { SITE } from "@/config";
+---
+
+<Layout title="Subscribe | LutzTalk">
+  <Header />
+  <main id="main-content" class="app-layout py-12">
+    <div class="max-w-2xl mx-auto">
+      <h1 class="text-3xl font-bold mb-2">Subscribe</h1>
+      <p class="text-foreground/80 mb-8">
+        Stay updated with new posts. Choose how you'd like to receive updates:
+      </p>
+
+      <div class="space-y-12">
+        <!-- Email Subscription -->
+        <section class="border-b border-border pb-12">
+          <div class="flex items-center gap-3 mb-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-6 h-6 text-accent"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
+            </svg>
+            <h2 class="text-2xl font-semibold">Email Newsletter</h2>
+          </div>
+          <p class="text-foreground/80 mb-6">
+            Get notified via email whenever a new post is published. No spam, unsubscribe anytime.
+          </p>
+          <EmailSubscribe variant="block" />
+        </section>
+
+        <!-- RSS Feed -->
+        <section>
+          <div class="flex items-center gap-3 mb-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-6 h-6 text-accent"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7m-6 0a1 1 0 11-2 0 1 1 0 012 0z"
+              />
+            </svg>
+            <h2 class="text-2xl font-semibold">RSS Feed</h2>
+          </div>
+          <p class="text-foreground/80 mb-6">
+            Subscribe to the RSS feed to get updates in your favorite RSS reader.
+          </p>
+          <div class="flex flex-col gap-4">
+            <a
+              href="/rss.xml"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-2 px-6 py-3 rounded bg-accent text-background font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 transition-opacity w-fit"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-5 h-5"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M6.503 20.752c0 1.794-1.456 3.248-3.251 3.248-1.796 0-3.252-1.454-3.252-3.248 0-1.794 1.456-3.248 3.252-3.248 1.795.001 3.251 1.454 3.251 3.248zm-6.503-12.572v4.811c6.05.062 10.96 4.966 11.022 11.009h4.817c-.062-8.71-7.118-15.758-15.839-15.82zm0-7.18v4.81c9.88.095 17.885 8.094 17.98 17.976h4.817c-.101-12.65-10.333-22.882-22.797-22.786z"
+                />
+              </svg>
+              Open RSS Feed
+            </a>
+            <div class="text-sm text-foreground/60">
+              <p class="mb-2">Or copy the feed URL to your RSS reader:</p>
+              <div class="flex items-center gap-2">
+                <code class="flex-1 px-3 py-2 bg-muted rounded text-xs break-all">
+                  {SITE.website}rss.xml
+                </code>
+                <button
+                  id="copy-rss-btn"
+                  class="px-3 py-2 bg-muted hover:bg-muted/80 rounded text-xs font-medium transition-colors"
+                  title="Copy RSS URL"
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+  <Footer />
+</Layout>
+
+<script>
+  (function() {
+    const copyBtn = document.querySelector<HTMLButtonElement>('#copy-rss-btn');
+    if (!copyBtn) return;
+
+    copyBtn.addEventListener('click', async () => {
+      const rssUrl = `${window.location.origin}/rss.xml`;
+      
+      try {
+        await navigator.clipboard.writeText(rssUrl);
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = 'Copied!';
+        copyBtn.classList.add('bg-green-600', 'text-white');
+        
+        setTimeout(() => {
+          if (copyBtn) {
+            copyBtn.textContent = originalText;
+            copyBtn.classList.remove('bg-green-600', 'text-white');
+          }
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+        copyBtn.textContent = 'Error';
+        setTimeout(() => {
+          if (copyBtn) {
+            copyBtn.textContent = 'Copy';
+          }
+        }, 2000);
+      }
+    });
+  })();
+</script>
+
+<script>
+  (function() {
+    const copyBtn = document.querySelector<HTMLButtonElement>('#copy-rss-btn');
+    if (!copyBtn) return;
+
+    copyBtn.addEventListener('click', async () => {
+      const rssUrl = `${window.location.origin}/rss.xml`;
+      
+      try {
+        await navigator.clipboard.writeText(rssUrl);
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = 'Copied!';
+        copyBtn.classList.add('bg-green-600', 'text-white');
+        
+        setTimeout(() => {
+          copyBtn.textContent = originalText;
+          copyBtn.classList.remove('bg-green-600', 'text-white');
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+        copyBtn.textContent = 'Error';
+        setTimeout(() => {
+          copyBtn.textContent = 'Copy';
+        }, 2000);
+      }
+    });
+  })();
+</script>
+
