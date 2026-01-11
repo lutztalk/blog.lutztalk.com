@@ -27,6 +27,7 @@
     "lodash.kebabcase": "^4.1.1",
     "remark-collapse": "^0.1.2",
     "remark-toc": "^9.0.0",
+    "resend": "^6.7.0",
     "satori": "^0.18.3",
     "sharp": "^0.34.5",
     "storyblok": "^4.12.0",

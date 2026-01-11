@@ -1,6 +1,7 @@
 ---
 import type { HTMLAttributes } from "astro/types";
 import Socials from "./Socials.astro";
+import EmailSubscribe from "./EmailSubscribe.astro";
 
 const currentYear = new Date().getFullYear();
 
@@ -19,11 +20,17 @@ const { noMarginTop = false, class: className, ...attrs } = Astro.props;
     class:list={[
       "py-6 sm:py-4",
       "border-t border-border",
-      "flex flex-col items-center justify-between sm:flex-row-reverse",
+      "flex flex-col gap-4",
     ]}
   >
-    <Socials />
-    <div class="my-2 flex flex-col items-center whitespace-nowrap sm:flex-row">
+    <div class="flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
+      <div class="flex flex-col items-center gap-2 sm:items-start">
+        <p class="text-sm font-medium text-foreground/80">Get new posts delivered to your inbox</p>
+        <EmailSubscribe variant="inline" />
+      </div>
+      <Socials />
+    </div>
+    <div class="flex flex-col items-center whitespace-nowrap sm:flex-row sm:justify-center">
       <span>Copyright &#169; {currentYear}</span>
       <span class="hidden sm:inline">&nbsp;|&nbsp;</span>
       <span>All rights reserved.</span>

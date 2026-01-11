@@ -1,0 +1,112 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+
+const email = Astro.url.searchParams.get('email') || '';
+---
+
+<Layout title="Unsubscribe | LutzTalk">
+  <Header />
+  <main id="main-content" class="app-layout py-12">
+    <div class="max-w-md mx-auto">
+      <h1 class="text-2xl font-bold mb-4">Unsubscribe</h1>
+      <p class="text-foreground/80 mb-6">
+        Enter your email address to unsubscribe from blog updates.
+      </p>
+      
+      <form id="unsubscribe-form" class="flex flex-col gap-4">
+        <input
+          type="email"
+          id="email-input"
+          name="email"
+          value={email}
+          placeholder="your@email.com"
+          required
+          class="px-4 py-2 rounded border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent placeholder:text-muted"
+          aria-label="Email address"
+        />
+        <button
+          type="submit"
+          id="unsubscribe-button"
+          class="px-6 py-2 rounded bg-accent text-background font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Unsubscribe
+        </button>
+      </form>
+      
+      <div id="unsubscribe-message" class="mt-4 text-sm hidden"></div>
+    </div>
+  </main>
+  <Footer />
+</Layout>
+
+<script>
+  (function() {
+    const form = document.querySelector<HTMLFormElement>('#unsubscribe-form');
+    const emailInput = document.querySelector<HTMLInputElement>('#email-input');
+    const submitButton = document.querySelector<HTMLButtonElement>('#unsubscribe-button');
+    const messageEl = document.querySelector<HTMLDivElement>('#unsubscribe-message');
+    
+    if (!form || !emailInput || !submitButton || !messageEl) return;
+
+    function showMessage(text: string, isError = false) {
+      if (!messageEl) return;
+      messageEl.textContent = text;
+      messageEl.classList.remove('hidden');
+      messageEl.classList.remove('text-muted', 'text-green-600', 'text-red-600');
+      messageEl.classList.add(isError ? 'text-red-600' : 'text-green-600');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = emailInput.value.trim();
+      if (!email) {
+        showMessage('Please enter an email address', true);
+        return;
+      }
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showMessage('Please enter a valid email address', true);
+        return;
+      }
+
+      // Disable button and show loading state
+      submitButton.disabled = true;
+      submitButton.textContent = 'Unsubscribing...';
+
+      try {
+        const response = await fetch('/api/unsubscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Unsubscribe failed');
+        }
+
+        showMessage('Successfully unsubscribed. You will no longer receive email updates.', false);
+        emailInput.value = '';
+        submitButton.disabled = true;
+        submitButton.textContent = 'Unsubscribed';
+      } catch (error) {
+        console.error('Unsubscribe error:', error);
+        showMessage(
+          error instanceof Error ? error.message : 'Something went wrong. Please try again.',
+          true
+        );
+        submitButton.disabled = false;
+        submitButton.textContent = 'Unsubscribe';
+      }
+    });
+  })();
+</script>
+

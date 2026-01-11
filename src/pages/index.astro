@@ -5,6 +5,7 @@ import Footer from "@/components/Footer.astro";
 import Socials from "@/components/Socials.astro";
 import LinkButton from "@/components/LinkButton.astro";
 import StoryblokCard from "@/components/StoryblokCard.astro";
+import EmailSubscribe from "@/components/EmailSubscribe.astro";
 import { getStoryblokPosts, sortStoryblokPosts } from "@/utils/getStoryblokPosts";
 import IconArrowRight from "@/assets/icons/IconArrowRight.svg";
 import { SITE } from "@/config";
@@ -80,6 +81,14 @@ const recentPosts = sortedPosts.filter(post => !post.data.featured);
         <IconArrowRight class="inline-block rtl:-rotate-180" />
       </LinkButton>
     </div>
+
+    <section class="my-12 pt-8 pb-6 border-t border-border">
+      <h2 class="text-xl font-semibold tracking-wide mb-4 text-center">Stay Updated</h2>
+      <p class="text-center text-foreground/80 mb-4">Get notified when new posts are published</p>
+      <div class="max-w-md mx-auto">
+        <EmailSubscribe variant="block" />
+      </div>
+    </section>
   </main>
   <Footer />
 </Layout>
