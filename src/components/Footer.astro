@@ -2,6 +2,7 @@
 import type { HTMLAttributes } from "astro/types";
 import Socials from "./Socials.astro";
 import EmailSubscribe from "./EmailSubscribe.astro";
+import SubscribeModal from "./SubscribeModal.astro";
 
 const currentYear = new Date().getFullYear();
 
@@ -36,4 +37,5 @@ const { noMarginTop = false, class: className, ...attrs } = Astro.props;
       <span>All rights reserved.</span>
     </div>
   </div>
+  <SubscribeModal />
 </footer>

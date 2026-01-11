@@ -1,0 +1,145 @@
+---
+type Props = {
+  email?: string;
+};
+
+const { email } = Astro.props;
+---
+
+<div
+  id="subscribe-modal"
+  class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="modal-title"
+>
+  <div
+    class="relative bg-background border border-border rounded-lg shadow-xl max-w-md w-full mx-4 p-6"
+  >
+    <button
+      id="close-modal-btn"
+      class="absolute top-4 right-4 text-foreground/60 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-accent rounded"
+      aria-label="Close modal"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="w-6 h-6"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M6 18L18 6M6 6l12 12"
+        />
+      </svg>
+    </button>
+
+    <div class="text-center">
+      <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/20 mb-4">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-6 w-6 text-green-600 dark:text-green-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+      </div>
+
+      <h2
+        id="modal-title"
+        class="text-2xl font-bold text-foreground mb-2"
+      >
+        Thanks for subscribing!
+      </h2>
+
+      <p class="text-foreground/80 mb-4">
+        {email ? (
+          <>
+            We've sent a confirmation email to <strong>{email}</strong>. Check your inbox!
+          </>
+        ) : (
+          <>
+            Check your email for a confirmation message. We'll notify you whenever a new post is published.
+          </>
+        )}
+      </p>
+
+      <button
+        id="modal-close-button"
+        class="mt-4 px-6 py-2 rounded bg-accent text-background font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 transition-opacity"
+      >
+        Got it!
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const modal = document.querySelector<HTMLDivElement>('#subscribe-modal');
+    const closeBtn = document.querySelector<HTMLButtonElement>('#close-modal-btn');
+    const closeButton = document.querySelector<HTMLButtonElement>('#modal-close-button');
+    
+    if (!modal) return;
+
+    function closeModal() {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      document.body.style.overflow = '';
+    }
+
+    function openModal() {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+      // Focus the close button for accessibility
+      if (closeButton) {
+        closeButton.focus();
+      }
+    }
+
+    // Close on button click
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeModal);
+    }
+    if (closeButton) {
+      closeButton.addEventListener('click', closeModal);
+    }
+
+    // Close on outside click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+
+    // Expose openModal globally so EmailSubscribe can call it
+    (window as any).openSubscribeModal = (email?: string) => {
+      if (email) {
+        const emailEl = modal.querySelector('strong');
+        if (emailEl) {
+          emailEl.textContent = email;
+        }
+      }
+      openModal();
+    };
+  })();
+</script>
+

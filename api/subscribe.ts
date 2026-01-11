@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Redis } from '@upstash/redis';
+import { Resend } from 'resend';
 
 // Initialize Redis from environment variables
 function getRedis() {
@@ -14,6 +15,86 @@ function getRedis() {
     url,
     token,
   });
+}
+
+// Initialize Resend
+function getResend() {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+
+  if (!apiKey) {
+    // Don't throw error - email sending is optional
+    return null;
+  }
+
+  return new Resend(apiKey);
+}
+
+// Send welcome email
+async function sendWelcomeEmail(email: string) {
+  const resend = getResend();
+  if (!resend) {
+    console.log('[Subscribe] Resend not configured, skipping welcome email');
+    return;
+  }
+
+  const siteUrl = process.env.SITE_URL || 'https://blog.lutztalk.com';
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'noreply@blog.lutztalk.com';
+  const fromName = process.env.RESEND_FROM_NAME || 'LutzTalk Blog';
+
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+        <div style="background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <h1 style="color: #000; margin-top: 0; font-size: 24px;">Welcome to LutzTalk!</h1>
+          <p style="color: #666; font-size: 16px; margin: 20px 0;">
+            Thanks for subscribing! You'll now receive email notifications whenever a new post is published.
+          </p>
+          <p style="color: #666; font-size: 16px; margin: 20px 0;">
+            I write about AI, 5G, collaboration platforms, networking, and live broadcasting from the lens of real-world use, experimentation, and lessons learned.
+          </p>
+          <a href="${siteUrl}" style="display: inline-block; background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 20px 0; font-weight: 500;">Visit the Blog</a>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+          <p style="color: #999; font-size: 12px; margin: 0;">
+            You're receiving this because you subscribed to updates from LutzTalk.<br>
+            <a href="${siteUrl}/unsubscribe?email=${encodeURIComponent(email)}" style="color: #999;">Unsubscribe</a>
+          </p>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const emailText = `
+Welcome to LutzTalk!
+
+Thanks for subscribing! You'll now receive email notifications whenever a new post is published.
+
+I write about AI, 5G, collaboration platforms, networking, and live broadcasting from the lens of real-world use, experimentation, and lessons learned.
+
+Visit the blog: ${siteUrl}
+
+---
+You're receiving this because you subscribed to updates from LutzTalk.
+Unsubscribe: ${siteUrl}/unsubscribe?email=${encodeURIComponent(email)}
+  `.trim();
+
+  try {
+    await resend.emails.send({
+      to: email,
+      from: `${fromName} <${fromEmail}>`,
+      subject: 'Welcome to LutzTalk!',
+      html: emailHtml,
+      text: emailText,
+    });
+    console.log(`[Subscribe] Welcome email sent to ${email}`);
+  } catch (error) {
+    console.error(`[Subscribe] Error sending welcome email to ${email}:`, error);
+    // Don't throw - subscription should still succeed even if email fails
+  }
 }
 
 export default async function handler(
@@ -73,6 +154,11 @@ export default async function handler(
     });
 
     console.log(`[Subscribe] New subscriber: ${normalizedEmail}`);
+
+    // Send welcome email (don't await - send in background)
+    sendWelcomeEmail(normalizedEmail).catch(err => {
+      console.error(`[Subscribe] Failed to send welcome email:`, err);
+    });
 
     return res.status(200).json({ 
       success: true, 

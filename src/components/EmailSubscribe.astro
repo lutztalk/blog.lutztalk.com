@@ -51,6 +51,8 @@ const { variant = "inline", class: className = "" } = Astro.props;
   <div id="subscribe-message" class="text-sm text-muted hidden"></div>
 </div>
 
+<!-- Subscribe Modal - will be added by pages that use this component -->
+
 <script>
   (function() {
     const form = document.querySelector<HTMLFormElement>('#email-subscribe-form');
@@ -113,8 +115,15 @@ const { variant = "inline", class: className = "" } = Astro.props;
         if (data.alreadySubscribed) {
           showMessage('You\'re already subscribed!', false);
         } else {
-          showMessage('Thanks for subscribing! Check your email to confirm.', false);
-          emailInput.value = '';
+          // Show modal instead of inline message
+          const openModal = (window as any).openSubscribeModal;
+          if (openModal) {
+            openModal(email);
+            emailInput.value = '';
+          } else {
+            showMessage('Thanks for subscribing! Check your email to confirm.', false);
+            emailInput.value = '';
+          }
         }
       } catch (error) {
         console.error('Subscription error:', error);
