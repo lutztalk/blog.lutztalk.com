@@ -171,18 +171,24 @@ export default async function handler(
 
     console.log(`[Subscribe] New subscriber: ${normalizedEmail}`);
 
-    // Add to Resend Audience
+    // Add to Resend Audience (audienceId is optional - Resend will use default audience if not provided)
     const resend = getResend();
     const audienceId = process.env.RESEND_AUDIENCE_ID?.trim();
     
-    if (resend && audienceId) {
+    if (resend) {
       try {
-        await resend.contacts.create({
+        const contactData: { email: string; unsubscribed: boolean; audienceId?: string } = {
           email: normalizedEmail,
-          audienceId: audienceId,
           unsubscribed: false,
-        });
-        console.log(`[Subscribe] Added ${normalizedEmail} to Resend Audience ${audienceId}`);
+        };
+        
+        // Only include audienceId if it's provided
+        if (audienceId) {
+          contactData.audienceId = audienceId;
+        }
+        
+        await resend.contacts.create(contactData);
+        console.log(`[Subscribe] Added ${normalizedEmail} to Resend${audienceId ? ` Audience ${audienceId}` : ' (default audience)'}`);
       } catch (err) {
         console.error(`[Subscribe] Failed to add to Resend Audience:`, err);
         // Log detailed error for debugging
@@ -192,18 +198,13 @@ export default async function handler(
             message: resendErr.message,
             statusCode: resendErr.statusCode,
             email: normalizedEmail,
-            audienceId,
+            audienceId: audienceId || 'default',
           });
         }
         // Don't throw - subscription should still succeed even if Resend Audience fails
       }
     } else {
-      if (!resend) {
-        console.log('[Subscribe] Resend not configured, skipping Audience add');
-      }
-      if (!audienceId) {
-        console.log('[Subscribe] RESEND_AUDIENCE_ID not set, skipping Audience add');
-      }
+      console.log('[Subscribe] Resend not configured, skipping Audience add');
     }
 
     // Send welcome email (await to ensure it's sent, but don't fail subscription if it fails)
