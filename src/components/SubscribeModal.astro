@@ -154,12 +154,15 @@ const { email } = Astro.props;
     // Expose openModal globally so EmailSubscribe can call it
     function setupOpenModal() {
       (window as any).openSubscribeModal = (email?: string, isAlreadySubscribed = false) => {
+        console.log('[SubscribeModal] openSubscribeModal called', { email, isAlreadySubscribed });
         // Re-query modal in case DOM changed (Astro view transitions)
         const modal = getModal();
         if (!modal) {
           console.warn('[SubscribeModal] Modal not found when trying to open');
+          console.warn('[SubscribeModal] Available modals in DOM:', document.querySelectorAll('[id*="modal"]').length);
           return;
         }
+        console.log('[SubscribeModal] Modal found, opening...');
         
         const titleEl = modal.querySelector('#modal-title-text');
         const messageEl = modal.querySelector('#modal-message');
