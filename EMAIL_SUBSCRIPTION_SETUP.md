@@ -13,11 +13,16 @@ The email subscription system allows readers to:
 
 ### 1. Get a Resend API Key
 
+**IMPORTANT**: You need a **full-access API key** (not restricted to "Send emails only") to add contacts to Resend Audience.
+
 1. Go to [Resend.com](https://resend.com) and create an account
 2. Navigate to **API Keys** in the dashboard
 3. Click **Create API Key**
 4. Give it a name (e.g., "Blog Newsletter")
-5. Copy the API key (starts with `re_`)
+5. **Make sure to select "Full Access"** (not "Send emails only")
+6. Copy the API key (starts with `re_`)
+
+**Note**: If you see the error "This API key is restricted to only send emails" when subscribing, you need to create a new API key with full permissions.
 
 ### 2. Verify Your Domain (Required for `noreply@lutztalk.com`)
 

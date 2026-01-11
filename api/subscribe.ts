@@ -91,7 +91,28 @@ Unsubscribe: ${siteUrl}/unsubscribe?email=${encodeURIComponent(email)}
       html: emailHtml,
       text: emailText,
     });
-    console.log(`[Subscribe] Welcome email sent successfully to ${email}`, JSON.stringify(result, null, 2));
+    
+    // Check if there's an error in the response
+    if (result.error) {
+      const error = result.error;
+      console.error(`[Subscribe] Resend email error:`, {
+        name: error.name,
+        message: error.message,
+        statusCode: error.statusCode,
+        email,
+      });
+      
+      // If domain not verified, log a helpful message
+      if (error.message?.includes('not verified') || error.message?.includes('domain')) {
+        console.error(`[Subscribe] ⚠️  Domain verification required: ${error.message}`);
+        console.error(`[Subscribe] Go to https://resend.com/domains to verify your domain.`);
+      }
+      
+      // Re-throw so caller knows email failed
+      throw new Error(`Resend email error: ${error.message}`);
+    }
+    
+    console.log(`[Subscribe] Welcome email sent successfully to ${email}`, result.data);
     return result;
   } catch (error) {
     console.error(`[Subscribe] Error sending welcome email to ${email}:`, error);
@@ -188,7 +209,25 @@ export default async function handler(
         }
         
         const result = await resend.contacts.create(contactData);
-        console.log(`[Subscribe] Successfully added ${normalizedEmail} to Resend${audienceId ? ` Audience ${audienceId}` : ' (default audience)'}`, result);
+        
+        // Check if there's an error in the response (Resend returns errors in the response, not as exceptions)
+        if (result.error) {
+          const error = result.error;
+          console.error(`[Subscribe] Resend API returned an error:`, {
+            name: error.name,
+            message: error.message,
+            statusCode: error.statusCode,
+            email: normalizedEmail,
+          });
+          
+          // If the API key is restricted, log a helpful message
+          if (error.name === 'restricted_api_key' || error.message?.includes('restricted')) {
+            console.error(`[Subscribe] ⚠️  Your RESEND_API_KEY is restricted to only send emails. To add contacts to Resend Audience, you need a full-access API key.`);
+            console.error(`[Subscribe] Go to https://resend.com/api-keys and create a new API key with full permissions (not just "Send emails").`);
+          }
+        } else if (result.data) {
+          console.log(`[Subscribe] Successfully added ${normalizedEmail} to Resend${audienceId ? ` Audience ${audienceId}` : ' (default audience)'}`, result.data);
+        }
       } catch (err) {
         console.error(`[Subscribe] Failed to add to Resend Audience:`, err);
         // Log detailed error for debugging
