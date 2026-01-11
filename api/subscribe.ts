@@ -83,17 +83,28 @@ Unsubscribe: ${siteUrl}/unsubscribe?email=${encodeURIComponent(email)}
   `.trim();
 
   try {
-    await resend.emails.send({
+    const result = await resend.emails.send({
       to: email,
       from: `${fromName} <${fromEmail}>`,
       subject: 'Welcome to LutzTalk!',
       html: emailHtml,
       text: emailText,
     });
-    console.log(`[Subscribe] Welcome email sent to ${email}`);
+    console.log(`[Subscribe] Welcome email sent to ${email}`, result);
+    return result;
   } catch (error) {
     console.error(`[Subscribe] Error sending welcome email to ${email}:`, error);
+    // Log detailed error information
+    if (error && typeof error === 'object' && 'message' in error) {
+      console.error(`[Subscribe] Resend error details:`, {
+        message: (error as any).message,
+        statusCode: (error as any).statusCode,
+        email,
+        fromEmail,
+      });
+    }
     // Don't throw - subscription should still succeed even if email fails
+    throw error; // Re-throw so the caller can log it
   }
 }
 
@@ -158,6 +169,14 @@ export default async function handler(
     // Send welcome email (don't await - send in background)
     sendWelcomeEmail(normalizedEmail).catch(err => {
       console.error(`[Subscribe] Failed to send welcome email:`, err);
+      // Log detailed error for debugging
+      if (err instanceof Error) {
+        console.error(`[Subscribe] Error details:`, {
+          message: err.message,
+          stack: err.stack,
+          email: normalizedEmail,
+        });
+      }
     });
 
     return res.status(200).json({ 
