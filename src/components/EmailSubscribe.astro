@@ -55,12 +55,25 @@ const { variant = "inline", class: className = "" } = Astro.props;
 
 <script>
   (function() {
+    console.log('[EmailSubscribe] Script initializing...');
     const form = document.querySelector<HTMLFormElement>('#email-subscribe-form');
     const emailInput = document.querySelector<HTMLInputElement>('#email-input');
     const submitButton = document.querySelector<HTMLButtonElement>('#subscribe-button');
     const messageEl = document.querySelector<HTMLDivElement>('#subscribe-message');
     
-    if (!form || !emailInput || !submitButton || !messageEl) return;
+    console.log('[EmailSubscribe] Elements found:', {
+      form: !!form,
+      emailInput: !!emailInput,
+      submitButton: !!submitButton,
+      messageEl: !!messageEl
+    });
+    
+    if (!form || !emailInput || !submitButton || !messageEl) {
+      console.error('[EmailSubscribe] Missing required elements, cannot initialize');
+      return;
+    }
+    
+    console.log('[EmailSubscribe] All elements found, setting up form listener');
 
     function showMessage(text: string, isError = false) {
       if (!messageEl) return;
@@ -79,9 +92,13 @@ const { variant = "inline", class: className = "" } = Astro.props;
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      console.log('[EmailSubscribe] Form submitted');
       
       const email = emailInput.value.trim();
+      console.log('[EmailSubscribe] Email value:', email);
+      
       if (!email) {
+        console.log('[EmailSubscribe] No email provided');
         showMessage('Please enter an email address', true);
         return;
       }
@@ -98,6 +115,7 @@ const { variant = "inline", class: className = "" } = Astro.props;
       submitButton.textContent = 'Subscribing...';
 
       try {
+        console.log('[EmailSubscribe] Sending subscription request to /api/subscribe');
         const response = await fetch('/api/subscribe', {
           method: 'POST',
           headers: {
@@ -106,7 +124,9 @@ const { variant = "inline", class: className = "" } = Astro.props;
           body: JSON.stringify({ email }),
         });
 
+        console.log('[EmailSubscribe] Response received:', response.status, response.statusText);
         const data = await response.json();
+        console.log('[EmailSubscribe] Response data:', data);
 
         if (!response.ok) {
           throw new Error(data.error || 'Subscription failed');
