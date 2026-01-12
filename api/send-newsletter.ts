@@ -160,8 +160,12 @@ Unsubscribe: ${siteUrl}/unsubscribe?email={{email}}
       },
     };
 
+    console.log(`[Newsletter] Sending webhooks to ${webhooks.length} subscribers`);
+
     for (const webhookUrl of webhooks) {
       try {
+        console.log(`[Newsletter] Sending webhook to ${webhookUrl}...`);
+        
         // Create an AbortController for timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
@@ -180,6 +184,11 @@ Unsubscribe: ${siteUrl}/unsubscribe?email={{email}}
 
         if (response.ok) {
           webhookSuccessCount++;
+          const responseText = await response.text().catch(() => '');
+          console.log(`[Newsletter] Webhook notification sent successfully to ${webhookUrl}`, {
+            status: response.status,
+            response: responseText.substring(0, 100),
+          });
           
           // Update webhook metadata
           const webhookKey = `webhook:${webhookUrl}`;
@@ -188,11 +197,13 @@ Unsubscribe: ${siteUrl}/unsubscribe?email={{email}}
             lastNotified: Date.now(),
             failureCount: 0,
           }, { ex: 60 * 60 * 24 * 365 }); // 1 year TTL
-          
-          console.log(`[Newsletter] Webhook notification sent to ${webhookUrl}`);
         } else {
           webhookErrorCount++;
-          console.error(`[Newsletter] Webhook ${webhookUrl} returned status ${response.status}`);
+          const errorText = await response.text().catch(() => '');
+          console.error(`[Newsletter] Webhook ${webhookUrl} returned status ${response.status}`, {
+            status: response.status,
+            error: errorText.substring(0, 200),
+          });
           
           // Increment failure count
           const webhookKey = `webhook:${webhookUrl}`;
@@ -214,7 +225,11 @@ Unsubscribe: ${siteUrl}/unsubscribe?email={{email}}
         }
       } catch (error) {
         webhookErrorCount++;
-        console.error(`[Newsletter] Error sending webhook to ${webhookUrl}:`, error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`[Newsletter] Error sending webhook to ${webhookUrl}:`, {
+          error: errorMessage,
+          name: error instanceof Error ? error.name : 'Unknown',
+        });
         
         // Increment failure count
         const webhookKey = `webhook:${webhookUrl}`;
