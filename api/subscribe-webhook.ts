@@ -84,6 +84,50 @@ export default async function handler(
 
     console.log(`[Subscribe Webhook] New webhook subscriber: ${normalizedUrl}`);
 
+    // Send a "thanks for subscribing" webhook notification
+    try {
+      const welcomePayload = {
+        event: 'webhook_subscribed',
+        message: 'Thanks for subscribing! You will receive notifications when new posts are published.',
+        subscribedAt: new Date().toISOString(),
+      };
+
+      console.log(`[Subscribe Webhook] Sending welcome notification to ${normalizedUrl}...`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      const response = await fetch(normalizedUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'LutzTalk-Blog/1.0',
+        },
+        body: JSON.stringify(welcomePayload),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        console.log(`[Subscribe Webhook] Welcome notification sent successfully to ${normalizedUrl}`);
+        await redis.set(webhookKey, {
+          url: normalizedUrl,
+          subscribedAt: Date.now(),
+          lastNotified: Date.now(),
+          failureCount: 0,
+        });
+      } else {
+        const errorText = await response.text().catch(() => '');
+        console.warn(`[Subscribe Webhook] Welcome notification to ${normalizedUrl} returned status ${response.status}: ${errorText.substring(0, 200)}`);
+        // Don't fail the subscription if the welcome webhook fails
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.warn(`[Subscribe Webhook] Error sending welcome notification to ${normalizedUrl}:`, errorMessage);
+      // Don't fail the subscription if the welcome webhook fails
+    }
+
     return res.status(200).json({ 
       success: true, 
       alreadySubscribed: false,
